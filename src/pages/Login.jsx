@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -7,6 +8,10 @@ const Login = () => {
     password: "",
   });
   const [darkMode, setDarkMode] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useAuth();
 
   // Initialize dark mode from localStorage if available
   useEffect(() => {
@@ -38,10 +43,19 @@ const Login = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login attempt with:", formData);
-    // Handle login logic here
+    setError("");
+    setIsLoading(true);
+
+    try {
+      await login(formData);
+      // No need to navigate here since it's handled in the context
+    } catch (err) {
+      setError(err.message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -108,6 +122,15 @@ const Login = () => {
         <div
           className={`${darkMode ? "bg-gray-800" : "bg-white"} py-6 sm:py-8 px-4 sm:px-10 shadow sm:rounded-lg transition-colors duration-300`}
         >
+          {error && (
+            <div
+              className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+              role="alert"
+            >
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
           <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
             <div>
               <label
@@ -190,9 +213,12 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-300"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-300 ${
+                  isLoading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
-                Sign in
+                {isLoading ? "Signing in..." : "Sign in"}
               </button>
             </div>
           </form>

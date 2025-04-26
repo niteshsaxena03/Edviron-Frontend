@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
   const [darkMode, setDarkMode] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { register } = useAuth();
 
   // Initialize dark mode from localStorage if available
   useEffect(() => {
@@ -40,10 +45,34 @@ const SignUp = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("SignUp attempt with:", formData);
-    // Handle signup logic here
+    setError("");
+
+    // Validate password match
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    // Validate password strength
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Remove confirmPassword as it's not needed in the API
+      const { confirmPassword, ...registerData } = formData;
+      await register(registerData);
+      // No need to navigate here since it's handled in the context
+    } catch (err) {
+      setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -116,29 +145,38 @@ const SignUp = () => {
         <div
           className={`${darkMode ? "bg-gray-800" : "bg-white"} py-6 sm:py-8 px-4 sm:px-10 shadow sm:rounded-lg transition-colors duration-300`}
         >
+          {error && (
+            <div
+              className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+              role="alert"
+            >
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
           <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
             <div>
               <label
-                htmlFor="name"
+                htmlFor="username"
                 className={`block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}
               >
-                Full Name
+                Username
               </label>
               <div className="mt-1">
                 <input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
-                  autoComplete="name"
+                  autoComplete="username"
                   required
-                  value={formData.name}
+                  value={formData.username}
                   onChange={handleChange}
                   className={`appearance-none block w-full px-3 py-2 sm:py-3 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base ${
                     darkMode
                       ? "bg-gray-700 border-gray-600 text-white"
                       : "bg-white border-gray-300 text-gray-900"
                   }`}
-                  placeholder="Enter your full name"
+                  placeholder="Choose a username"
                 />
               </div>
             </div>
@@ -193,6 +231,11 @@ const SignUp = () => {
                   placeholder="Create a password"
                 />
               </div>
+              <p
+                className={`mt-1 text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+              >
+                Password must be at least 6 characters long
+              </p>
             </div>
 
             <div>
@@ -249,9 +292,12 @@ const SignUp = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-300"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-300 ${
+                  isLoading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
-                Sign up
+                {isLoading ? "Creating account..." : "Sign up"}
               </button>
             </div>
           </form>
