@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import SchoolTransactions from "./pages/SchoolTransactions";
 import TransactionStatus from "./pages/TransactionStatus";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from "./components/Layout";
 import { AuthProvider } from "./context/AuthContext";
 
 const App = () => {
@@ -19,14 +20,19 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
 
-          {/* Protected routes */}
+          {/* Protected routes with shared layout */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route
-              path="/school-transactions"
-              element={<SchoolTransactions />}
-            />
-            <Route path="/transaction-status" element={<TransactionStatus />} />
+            <Route element={<Layout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route
+                path="/school-transactions"
+                element={<SchoolTransactions />}
+              />
+              <Route
+                path="/transaction-status"
+                element={<TransactionStatus />}
+              />
+            </Route>
           </Route>
         </Routes>
       </AuthProvider>

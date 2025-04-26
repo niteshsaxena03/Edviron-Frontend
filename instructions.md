@@ -155,12 +155,14 @@ for managing Transactions and Payments.
    o Provide env file
 1. Submission Links
    o Share the hosted project link along with the GitHub repository URL.
+
    PART 2- FRONTEND
    Objective:
    Develop a responsive and user-friendly interface for the School Payments and Dashboard
    application. The focus is on creating a React-based frontend that integrates with the backend
    APIs to display and manage data dynamically.
    Requirements
+   
 1. Project Setup
     Use React.js
     Set up a new project using Vite or Create React App.

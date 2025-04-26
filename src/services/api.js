@@ -32,9 +32,11 @@ api.interceptors.response.use(
 
     // Handle token expiration
     if (response && response.status === 401) {
+      console.log("Unauthorized access detected, redirecting to login");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      // In a real app, you would redirect to login here
+      // window.location.href = "/login";
     }
 
     return Promise.reject(error);
