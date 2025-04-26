@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getRealToken } from "../services/auth.service";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -56,27 +55,6 @@ const Login = () => {
       setError(
         err.message || "Failed to login. Please check your credentials."
       );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Testing purpose only - sets a mock token for development
-  const handleTestLogin = async () => {
-    setIsLoading(true);
-    try {
-      const success = await getRealToken();
-      if (success) {
-        navigate("/dashboard");
-        window.location.reload(); // Force reload to update auth state
-      } else {
-        setError(
-          "Failed to get authentication token. Check console for details."
-        );
-      }
-    } catch (error) {
-      console.error("Test login error:", error);
-      setError("Failed to log in: " + (error.message || "Unknown error"));
     } finally {
       setIsLoading(false);
     }
@@ -264,17 +242,6 @@ const Login = () => {
               </button>
             </div>
           </form>
-
-          {/* Testing purpose only - remove in production */}
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={handleTestLogin}
-              className={`w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
-            >
-              Test Login (Development Only)
-            </button>
-          </div>
 
           {/* Guest Login Button */}
           <div className="mt-4">

@@ -50,36 +50,6 @@ export const login = async (credentials) => {
   }
 };
 
-// Real login to get a valid token from the server
-export const getRealToken = async () => {
-  try {
-    const response = await axios.post(`${API_URL}/users/login`, {
-      email: "nitesh04@gmail.com",
-      password: "11111111",
-    });
-
-    console.log("Login response:", response.data);
-
-    if (response.data && response.data.data && response.data.data.token) {
-      localStorage.setItem("token", response.data.data.token);
-      if (response.data.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.data.user));
-      }
-      console.log("✅ Authenticated successfully with a real token!");
-      return true;
-    } else {
-      console.error("Token not found in response:", response.data);
-      return false;
-    }
-  } catch (error) {
-    console.error(
-      "Failed to get real token:",
-      error.response?.data || error.message
-    );
-    return false;
-  }
-};
-
 // Logout user
 export const logout = () => {
   localStorage.removeItem("token");
@@ -109,17 +79,41 @@ export const getToken = () => {
   return localStorage.getItem("token");
 };
 
-// Refresh authentication token - use this when token is expired
+// Get valid token or attempt to refresh if needed
+export const getRealToken = async () => {
+  const token = localStorage.getItem("token");
+
+  // If token exists, return it
+  if (token) {
+    return token;
+  }
+
+  // If no token, try to refresh
+  const refreshed = await refreshToken();
+  if (refreshed) {
+    return localStorage.getItem("token");
+  }
+
+  // If refresh failed, throw error
+  throw new Error("Failed to get authentication token");
+};
+
+// Refresh authentication token
 export const refreshToken = async () => {
   try {
-    console.log("Refreshing authentication token...");
-    const success = await getRealToken();
+    // Use the guest credentials to get a new token
+    const response = await axios.post(`${API_URL}/users/login`, {
+      email: "nitesh04@gmail.com",
+      password: "11111111",
+    });
 
-    if (success) {
-      console.log("Token refreshed successfully!");
+    if (response.data && response.data.data && response.data.data.token) {
+      localStorage.setItem("token", response.data.data.token);
+      if (response.data.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
+      }
       return true;
     } else {
-      console.error("Failed to refresh token");
       return false;
     }
   } catch (error) {

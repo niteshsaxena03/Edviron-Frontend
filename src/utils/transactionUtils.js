@@ -269,32 +269,40 @@ export const determineTransactionStatus = (transaction) => {
     return "refunded";
   }
 
-  // Check for cancellation
+  // Check for cancellation - handle case differences
   if (
     transaction.canceled ||
     transaction.canceledAt ||
-    currentStatus === "canceled"
+    currentStatus === "canceled" ||
+    currentStatus === "cancelled" // Handle British English spelling
   ) {
     return "canceled";
   }
 
-  // Check for completion
+  // Check for completion - handle case differences and aliases
+  const completedStatuses = [
+    "completed",
+    "success",
+    "succeeded",
+    "approved",
+    "confirmed",
+  ];
   if (
     transaction.completed ||
     transaction.completedAt ||
-    currentStatus === "completed" ||
-    currentStatus === "success" ||
-    currentStatus === "succeeded"
+    completedStatuses.includes(currentStatus)
   ) {
     return "completed";
   }
 
-  // Check for processing
-  if (
-    transaction.processing ||
-    currentStatus === "processing" ||
-    currentStatus === "in_progress"
-  ) {
+  // Check for processing - handle case differences and aliases
+  const processingStatuses = [
+    "processing",
+    "in_progress",
+    "in-progress",
+    "pending_approval",
+  ];
+  if (transaction.processing || processingStatuses.includes(currentStatus)) {
     return "processing";
   }
 
