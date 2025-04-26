@@ -2,10 +2,15 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getAllTransactions } from "../services/transaction.service";
 import { useAuth } from "../context/AuthContext";
+import { FaArrowDown, FaArrowUp } from "react-icons/fa";
+import { useTheme } from "../context/ThemeContext";
+import * as darkModeStyles from "../utils/darkModeStyles";
+import { getRealToken } from "../services/auth.service";
 
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentUser } = useAuth();
+  const { currentUser, authenticated } = useAuth();
+  const { darkMode } = useTheme();
 
   // Get query params with defaults
   const page = parseInt(searchParams.get("page")) || 1;
@@ -25,6 +30,12 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    totalAmount: 0,
+    totalCount: 0,
+    successfulAmount: 0,
+    successfulCount: 0,
+  });
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState(status);
@@ -37,12 +48,29 @@ const Dashboard = () => {
     order: order,
   });
 
-  // Status options
-  const statusOptions = ["All", "success", "pending", "failed"];
+  // Status options - updated to match backend values
+  const statusOptions = [
+    "All",
+    "success",
+    "pending",
+    "failed",
+    "processing",
+    "completed",
+    "refunded",
+    "cancelled",
+  ];
 
   useEffect(() => {
-    fetchTransactions();
+    // Get authentication token first, then fetch transactions
+    ensureAuthentication();
+  }, []);
+
+  useEffect(() => {
+    if (authenticated) {
+      fetchTransactions();
+    }
   }, [
+    authenticated,
     page,
     limit,
     sortConfig.field,
@@ -51,6 +79,18 @@ const Dashboard = () => {
     dateRange.startDate,
     dateRange.endDate,
   ]);
+
+  // Make sure we're authenticated before fetching data
+  const ensureAuthentication = async () => {
+    try {
+      if (!authenticated) {
+        await getRealToken();
+      }
+    } catch (err) {
+      console.error("Authentication error:", err);
+      setError("Authentication failed. Please log in again.");
+    }
+  };
 
   const fetchTransactions = async () => {
     setLoading(true);
@@ -78,9 +118,51 @@ const Dashboard = () => {
       setSearchParams(params);
 
       const result = await getAllTransactions(params);
+      console.log("Transactions API response:", result);
 
-      setTransactions(result.data.transactions);
-      setPagination(result.data.pagination);
+      if (result && result.data) {
+        // Process the transactions to normalize status values
+        const normalizedTransactions =
+          result.data.transactions?.map((tx) => ({
+            ...tx,
+            // Convert status to lowercase for consistency
+            status: tx.status?.toLowerCase() || "pending",
+          })) || [];
+
+        console.log("Normalized transactions:", normalizedTransactions);
+
+        setTransactions(normalizedTransactions);
+        setPagination(
+          result.data.pagination || {
+            total: 0,
+            page: 1,
+            limit: 10,
+            totalPages: 0,
+          }
+        );
+
+        // Calculate statistics based on normalized transactions
+        const total = normalizedTransactions.length;
+        const totalAmount = normalizedTransactions.reduce(
+          (sum, tx) => sum + (parseFloat(tx.transaction_amount) || 0),
+          0
+        );
+        const successfulTxs = normalizedTransactions.filter(
+          (tx) => tx.status === "success" || tx.status === "completed"
+        );
+        const successfulCount = successfulTxs.length;
+        const successfulAmount = successfulTxs.reduce(
+          (sum, tx) => sum + (parseFloat(tx.transaction_amount) || 0),
+          0
+        );
+
+        setStats({
+          totalAmount: totalAmount,
+          totalCount: total,
+          successfulAmount: successfulAmount,
+          successfulCount: successfulCount,
+        });
+      }
     } catch (err) {
       console.error("Error fetching transactions:", err);
       setError(err.message || "Failed to load transactions");
@@ -137,388 +219,494 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
-          Transactions Dashboard
-        </h1>
-        <div>
-          <p className="text-sm text-gray-600">
-            Welcome,{" "}
-            <span className="font-semibold">
-              {currentUser?.username || currentUser?.email || "User"}
-            </span>
-          </p>
-        </div>
-      </div>
+    <div
+      className={`${darkMode ? "bg-gray-900" : "bg-gray-100"} min-h-screen py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300`}
+    >
+      <div className="max-w-7xl mx-auto">
+        <h1 className={darkModeStyles.getHeaderClass(darkMode)}>Dashboard</h1>
 
-      {/* Filters */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <h2 className="text-lg font-medium text-gray-700 mb-4">Filters</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              value={statusFilter}
-              onChange={handleStatusFilterChange}
-              className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        {/* Filters Section */}
+        <div className={darkModeStyles.getFilterSectionClass(darkMode)}>
+          <h2 className={darkModeStyles.getSectionHeaderClass(darkMode)}>
+            Filters
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={darkModeStyles.getFormLabelClass(darkMode)}>
+                Status
+              </label>
+              <select
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
+                className={darkModeStyles.getSelectClass(darkMode)}
+              >
+                {statusOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={darkModeStyles.getFormLabelClass(darkMode)}>
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => handleDateChange(e, "startDate")}
+                className={darkModeStyles.getInputClass(darkMode)}
+              />
+            </div>
+            <div>
+              <label className={darkModeStyles.getFormLabelClass(darkMode)}>
+                End Date
+              </label>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => handleDateChange(e, "endDate")}
+                className={darkModeStyles.getInputClass(darkMode)}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end space-x-3">
+            <button
+              onClick={resetFilters}
+              className={darkModeStyles.getSecondaryButtonClass(darkMode)}
             >
-              {statusOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Start Date
-            </label>
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) => handleDateChange(e, "startDate")}
-              className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              End Date
-            </label>
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) => handleDateChange(e, "endDate")}
-              className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
+              Reset
+            </button>
+            <button
+              onClick={applyFilters}
+              className={darkModeStyles.getPrimaryButtonClass(darkMode)}
+            >
+              Apply Filters
+            </button>
           </div>
         </div>
-        <div className="mt-4 flex justify-end space-x-3">
-          <button
-            onClick={resetFilters}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Reset
-          </button>
-          <button
-            onClick={applyFilters}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Apply Filters
-          </button>
-        </div>
-      </div>
 
-      {/* Error message */}
-      {error && (
-        <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-          role="alert"
-        >
-          <strong className="font-bold">Error! </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
+        {/* Error message */}
+        {error && (
+          <div
+            className={`${
+              darkMode
+                ? "bg-red-900 bg-opacity-20 border-red-700"
+                : "bg-red-100 border-red-400"
+            } border text-red-700 px-4 py-3 rounded relative mb-4`}
+            role="alert"
+          >
+            <strong className="font-bold">Error! </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
 
-      {/* Loading indicator */}
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 mt-6">
+          {/* Total Transactions Card */}
+          <div className={darkModeStyles.getContentContainerClass(darkMode)}>
+            <h2
+              className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} truncate`}
+            >
+              Total Transactions
+            </h2>
+            <div className="mt-1 flex items-baseline justify-between">
+              <p
+                className={`text-2xl font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+              >
+                {stats.totalCount}
+              </p>
+              <div
+                className={`bg-green-100 ${darkMode ? "bg-opacity-20" : ""} p-1 rounded-md`}
+              >
+                <FaArrowUp className="text-green-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Total Amount Card */}
+          <div className={darkModeStyles.getContentContainerClass(darkMode)}>
+            <h2
+              className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} truncate`}
+            >
+              Total Amount
+            </h2>
+            <div className="mt-1 flex items-baseline justify-between">
+              <p
+                className={`text-2xl font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+              >
+                ${stats.totalAmount ? stats.totalAmount.toFixed(2) : "0.00"}
+              </p>
+              <div
+                className={`bg-green-100 ${darkMode ? "bg-opacity-20" : ""} p-1 rounded-md`}
+              >
+                <FaArrowUp className="text-green-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Successful Transactions Card */}
+          <div className={darkModeStyles.getContentContainerClass(darkMode)}>
+            <h2
+              className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} truncate`}
+            >
+              Successful Transactions
+            </h2>
+            <div className="mt-1 flex items-baseline justify-between">
+              <p
+                className={`text-2xl font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+              >
+                {stats.successfulCount}
+              </p>
+              <div
+                className={`bg-green-100 ${darkMode ? "bg-opacity-20" : ""} p-1 rounded-md`}
+              >
+                <FaArrowUp className="text-green-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Successful Amount Card */}
+          <div className={darkModeStyles.getContentContainerClass(darkMode)}>
+            <h2
+              className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} truncate`}
+            >
+              Successful Amount
+            </h2>
+            <div className="mt-1 flex items-baseline justify-between">
+              <p
+                className={`text-2xl font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+              >
+                $
+                {stats.successfulAmount
+                  ? stats.successfulAmount.toFixed(2)
+                  : "0.00"}
+              </p>
+              <div
+                className={`bg-green-100 ${darkMode ? "bg-opacity-20" : ""} p-1 rounded-md`}
+              >
+                <FaArrowUp className="text-green-500" />
+              </div>
+            </div>
+          </div>
         </div>
-      ) : (
-        <>
-          {/* Transactions table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSortChange("collect_id")}
-                  >
-                    <div className="flex items-center">
-                      Transaction ID
-                      {sortConfig.field === "collect_id" && (
-                        <span className="ml-1">
-                          {sortConfig.order === "asc" ? "↑" : "↓"}
-                        </span>
+
+        {/* Recent Transactions */}
+        <div className={darkModeStyles.getContentContainerClass(darkMode)}>
+          <h2 className={darkModeStyles.getSectionHeaderClass(darkMode)}>
+            Recent Transactions
+          </h2>
+
+          {loading ? (
+            <div className="flex justify-center items-center h-32">
+              <div
+                className={`w-6 h-6 border-2 ${darkMode ? "border-gray-300" : "border-gray-600"} border-t-blue-600 rounded-full animate-spin`}
+              ></div>
+            </div>
+          ) : error ? (
+            <div className={`text-center py-4 text-red-500`}>{error}</div>
+          ) : transactions.length === 0 ? (
+            <div
+              className={`text-center py-4 ${darkMode ? "text-gray-300" : "text-gray-500"}`}
+            >
+              No transactions found
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className={darkModeStyles.getTableClass(darkMode)}>
+                <thead className={darkModeStyles.getTableHeaderClass(darkMode)}>
+                  <tr>
+                    <th
+                      className={darkModeStyles.getTableHeaderCellClass(
+                        darkMode
                       )}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSortChange("school_id")}
-                  >
-                    <div className="flex items-center">
-                      School ID
-                      {sortConfig.field === "school_id" && (
-                        <span className="ml-1">
-                          {sortConfig.order === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSortChange("gateway")}
-                  >
-                    <div className="flex items-center">
-                      Gateway
-                      {sortConfig.field === "gateway" && (
-                        <span className="ml-1">
-                          {sortConfig.order === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSortChange("order_amount")}
-                  >
-                    <div className="flex items-center">
-                      Order Amount
-                      {sortConfig.field === "order_amount" && (
-                        <span className="ml-1">
-                          {sortConfig.order === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSortChange("transaction_amount")}
-                  >
-                    <div className="flex items-center">
-                      Transaction Amount
-                      {sortConfig.field === "transaction_amount" && (
-                        <span className="ml-1">
-                          {sortConfig.order === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSortChange("status")}
-                  >
-                    <div className="flex items-center">
-                      Status
-                      {sortConfig.field === "status" && (
-                        <span className="ml-1">
-                          {sortConfig.order === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSortChange("payment_time")}
-                  >
-                    <div className="flex items-center">
-                      Payment Time
-                      {sortConfig.field === "payment_time" && (
-                        <span className="ml-1">
-                          {sortConfig.order === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {transactions.length > 0 ? (
-                  transactions.map((transaction) => (
-                    <tr
-                      key={transaction.collect_id}
-                      className="hover:bg-gray-50 transition-colors duration-150"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      Transaction ID
+                    </th>
+                    <th
+                      className={darkModeStyles.getTableHeaderCellClass(
+                        darkMode
+                      )}
+                    >
+                      School ID
+                    </th>
+                    <th
+                      className={darkModeStyles.getTableHeaderCellClass(
+                        darkMode
+                      )}
+                    >
+                      Gateway
+                    </th>
+                    <th
+                      className={darkModeStyles.getTableHeaderCellClass(
+                        darkMode
+                      )}
+                    >
+                      Order Amount
+                    </th>
+                    <th
+                      className={darkModeStyles.getTableHeaderCellClass(
+                        darkMode
+                      )}
+                    >
+                      Transaction Amount
+                    </th>
+                    <th
+                      className={darkModeStyles.getTableHeaderCellClass(
+                        darkMode
+                      )}
+                    >
+                      Status
+                    </th>
+                    <th
+                      className={darkModeStyles.getTableHeaderCellClass(
+                        darkMode
+                      )}
+                    >
+                      Payment Time
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className={darkModeStyles.getTableBodyClass(darkMode)}>
+                  {transactions.map((transaction) => (
+                    <tr
+                      key={transaction._id}
+                      className={darkModeStyles.getTableRowClass(darkMode)}
+                    >
+                      <td
+                        className={darkModeStyles.getTableCellClass(darkMode)}
+                      >
                         {transaction.custom_order_id ||
                           transaction.collect_id ||
                           "N/A"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td
+                        className={darkModeStyles.getTableCellClass(darkMode)}
+                      >
                         {transaction.school_id || "N/A"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td
+                        className={darkModeStyles.getTableCellClass(darkMode)}
+                      >
                         {transaction.gateway || "N/A"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ₹{transaction.order_amount?.toFixed(2) || "N/A"}
+                      <td
+                        className={darkModeStyles.getTableCellClass(darkMode)}
+                      >
+                        $
+                        {transaction.order_amount
+                          ? parseFloat(transaction.order_amount).toFixed(2)
+                          : "0.00"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ₹{transaction.transaction_amount?.toFixed(2) || "N/A"}
+                      <td
+                        className={darkModeStyles.getTableCellClass(darkMode)}
+                      >
+                        $
+                        {transaction.transaction_amount
+                          ? parseFloat(transaction.transaction_amount).toFixed(
+                              2
+                            )
+                          : "0.00"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td
+                        className={darkModeStyles.getTableCellClass(darkMode)}
+                      >
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            ${
-                              transaction.status === "success"
-                                ? "bg-green-100 text-green-800"
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            transaction.status === "completed" ||
+                            transaction.status === "success"
+                              ? "bg-green-100 text-green-800"
+                              : transaction.status === "failed"
+                                ? "bg-red-100 text-red-800"
                                 : transaction.status === "pending"
                                   ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
-                            }`}
+                                  : "bg-gray-100 text-gray-800"
+                          } ${darkMode ? "bg-opacity-20" : ""}`}
                         >
-                          {transaction.status || "N/A"}
+                          {transaction.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(transaction.payment_time)}
+                      <td
+                        className={darkModeStyles.getTableCellClass(darkMode)}
+                      >
+                        {transaction.payment_time
+                          ? new Date(transaction.payment_time).toLocaleString()
+                          : transaction.createdAt
+                            ? new Date(transaction.createdAt).toLocaleString()
+                            : "N/A"}
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="7"
-                      className="px-6 py-4 text-center text-sm text-gray-500"
-                    >
-                      No transactions found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
 
-          {/* Pagination */}
-          {transactions.length > 0 && (
-            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
-              <div className="flex flex-1 justify-between sm:hidden">
-                <button
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={page === 1}
-                  className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 ${page === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}`}
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={page === pagination.totalPages}
-                  className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 ${page === pagination.totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}`}
-                >
-                  Next
-                </button>
-              </div>
-              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Showing{" "}
-                    <span className="font-medium">
-                      {transactions.length > 0 ? (page - 1) * limit + 1 : 0}
-                    </span>{" "}
-                    to{" "}
-                    <span className="font-medium">
-                      {Math.min(page * limit, pagination.total)}
-                    </span>{" "}
-                    of <span className="font-medium">{pagination.total}</span>{" "}
-                    results
-                  </p>
-                </div>
-                <div>
-                  <nav
-                    className="isolate inline-flex -space-x-px rounded-md shadow-sm"
-                    aria-label="Pagination"
-                  >
+              {/* Pagination */}
+              {transactions.length > 0 && (
+                <div className={darkModeStyles.getPaginationClass(darkMode)}>
+                  <div className="flex flex-1 justify-between sm:hidden">
                     <button
                       onClick={() => handlePageChange(page - 1)}
                       disabled={page === 1}
-                      className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${page === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50 focus:z-20 focus:outline-offset-0"}`}
+                      className={`${darkModeStyles.getSecondaryButtonClass(darkMode)} ${
+                        page === 1 ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     >
-                      <span className="sr-only">Previous</span>
-                      <svg
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      Previous
                     </button>
-
-                    {/* Page numbers */}
-                    {[...Array(pagination.totalPages)].map((_, idx) => {
-                      const pageNumber = idx + 1;
-                      // Only show a window of 5 pages centered around current page
-                      if (
-                        pageNumber === 1 ||
-                        pageNumber === pagination.totalPages ||
-                        (pageNumber >= page - 2 && pageNumber <= page + 2)
-                      ) {
-                        return (
-                          <button
-                            key={pageNumber}
-                            onClick={() => handlePageChange(pageNumber)}
-                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                              page === pageNumber
-                                ? "z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                                : "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0"
-                            }`}
-                          >
-                            {pageNumber}
-                          </button>
-                        );
-                      }
-
-                      // Show ellipsis
-                      if (
-                        (pageNumber === 2 && page > 4) ||
-                        (pageNumber === pagination.totalPages - 1 &&
-                          page < pagination.totalPages - 3)
-                      ) {
-                        return (
-                          <span
-                            key={`ellipsis-${pageNumber}`}
-                            className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300"
-                          >
-                            ...
-                          </span>
-                        );
-                      }
-
-                      return null;
-                    })}
-
                     <button
                       onClick={() => handlePageChange(page + 1)}
                       disabled={page === pagination.totalPages}
-                      className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${page === pagination.totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50 focus:z-20 focus:outline-offset-0"}`}
+                      className={`${darkModeStyles.getSecondaryButtonClass(darkMode)} ml-3 ${
+                        page === pagination.totalPages
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
                     >
-                      <span className="sr-only">Next</span>
-                      <svg
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      Next
                     </button>
-                  </nav>
+                  </div>
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p
+                        className={`text-sm ${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Showing{" "}
+                        <span className="font-medium">
+                          {transactions.length > 0 ? (page - 1) * limit + 1 : 0}
+                        </span>{" "}
+                        to{" "}
+                        <span className="font-medium">
+                          {Math.min(page * limit, pagination.total)}
+                        </span>{" "}
+                        of{" "}
+                        <span className="font-medium">{pagination.total}</span>{" "}
+                        results
+                      </p>
+                    </div>
+                    <div>
+                      <nav
+                        className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+                        aria-label="Pagination"
+                      >
+                        <button
+                          onClick={() => handlePageChange(page - 1)}
+                          disabled={page === 1}
+                          className={`relative inline-flex items-center rounded-l-md px-2 py-2 ${
+                            darkMode
+                              ? "text-gray-300 ring-gray-700 hover:bg-gray-800"
+                              : "text-gray-400 ring-gray-300 hover:bg-gray-50"
+                          } ring-1 ring-inset ${
+                            page === 1
+                              ? "opacity-50 cursor-not-allowed"
+                              : "focus:z-20 focus:outline-offset-0"
+                          }`}
+                        >
+                          <span className="sr-only">Previous</span>
+                          <svg
+                            className="h-5 w-5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+
+                        {/* Page numbers */}
+                        {[...Array(pagination.totalPages)].map((_, idx) => {
+                          const pageNumber = idx + 1;
+                          // Only show a window of 5 pages centered around current page
+                          if (
+                            pageNumber === 1 ||
+                            pageNumber === pagination.totalPages ||
+                            (pageNumber >= page - 2 && pageNumber <= page + 2)
+                          ) {
+                            return (
+                              <button
+                                key={pageNumber}
+                                onClick={() => handlePageChange(pageNumber)}
+                                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                                  page === pageNumber
+                                    ? `z-10 ${
+                                        darkMode ? "bg-blue-700" : "bg-blue-600"
+                                      } text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600`
+                                    : `${
+                                        darkMode
+                                          ? "text-gray-300 ring-gray-700 hover:bg-gray-800"
+                                          : "text-gray-900 ring-gray-300 hover:bg-gray-50"
+                                      } ring-1 ring-inset focus:outline-offset-0`
+                                }`}
+                              >
+                                {pageNumber}
+                              </button>
+                            );
+                          }
+
+                          // Show ellipsis
+                          if (
+                            (pageNumber === 2 && page > 4) ||
+                            (pageNumber === pagination.totalPages - 1 &&
+                              page < pagination.totalPages - 3)
+                          ) {
+                            return (
+                              <span
+                                key={`ellipsis-${pageNumber}`}
+                                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                                  darkMode
+                                    ? "text-gray-300 ring-gray-700"
+                                    : "text-gray-700 ring-gray-300"
+                                } ring-1 ring-inset`}
+                              >
+                                ...
+                              </span>
+                            );
+                          }
+
+                          return null;
+                        })}
+
+                        <button
+                          onClick={() => handlePageChange(page + 1)}
+                          disabled={page === pagination.totalPages}
+                          className={`relative inline-flex items-center rounded-r-md px-2 py-2 ${
+                            darkMode
+                              ? "text-gray-300 ring-gray-700 hover:bg-gray-800"
+                              : "text-gray-400 ring-gray-300 hover:bg-gray-50"
+                          } ring-1 ring-inset ${
+                            page === pagination.totalPages
+                              ? "opacity-50 cursor-not-allowed"
+                              : "focus:z-20 focus:outline-offset-0"
+                          }`}
+                        >
+                          <span className="sr-only">Next</span>
+                          <svg
+                            className="h-5 w-5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 };

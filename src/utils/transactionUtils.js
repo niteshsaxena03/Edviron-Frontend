@@ -147,11 +147,146 @@ export const canRefundTransaction = (transaction) => {
 };
 
 /**
- * Generate a unique transaction reference
+ * Generate a unique transaction reference with optional prefix
+ * @param {string} prefix - Optional prefix for the reference (default: 'TX')
  * @returns {string} - Unique transaction reference
  */
-export const generateTransactionReference = () => {
+export const generateTransactionReference = (prefix = "TX") => {
   const timestamp = new Date().getTime();
-  const random = Math.floor(Math.random() * 10000);
-  return `TXN-${timestamp}-${random}`;
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0");
+  return `${prefix}-${timestamp}-${random}`;
+};
+
+/**
+ * Calculate transaction fee based on amount and payment method
+ * @param {number} amount - Transaction amount
+ * @param {string} paymentMethod - Payment method code
+ * @returns {number} - Calculated fee
+ */
+export const calculateTransactionFee = (amount, paymentMethod) => {
+  // Default fee rates and fixed fees
+  const feeRates = {
+    credit_card: 0.029, // 2.9%
+    debit_card: 0.015, // 1.5%
+    bank_transfer: 0.01, // 1%
+    wallet: 0.005, // 0.5%
+    cash: 0, // No fee
+    paypal: 0.034, // 3.4%
+    venmo: 0.019, // 1.9%
+    crypto: 0.01, // 1%
+    default: 0.02, // 2% default
+  };
+
+  const fixedFees = {
+    credit_card: 0.3,
+    debit_card: 0.2,
+    bank_transfer: 0.25,
+    wallet: 0,
+    cash: 0,
+    paypal: 0.3,
+    venmo: 0.1,
+    crypto: 0,
+    default: 0.25,
+  };
+
+  // Use default if payment method is not recognized
+  const rate = feeRates[paymentMethod] || feeRates.default;
+  const fixedFee = fixedFees[paymentMethod] || fixedFees.default;
+
+  // Calculate total fee (percentage + fixed)
+  const percentageFee = amount * rate;
+  const totalFee = percentageFee + fixedFee;
+
+  // Round to 2 decimal places
+  return Math.round(totalFee * 100) / 100;
+};
+
+/**
+ * Determine transaction status based on various conditions
+ * @param {Object} transactionData - Transaction data
+ * @returns {string} - Determined status code
+ */
+export const determineTransactionStatus = (transactionData) => {
+  const {
+    errorCode,
+    gatewayResponse,
+    isRefunded,
+    isCanceled,
+    processingComplete,
+    verificationPending,
+  } = transactionData;
+
+  // Check for failure conditions first
+  if (errorCode || (gatewayResponse && gatewayResponse.error)) {
+    return "failed";
+  }
+
+  // Check other statuses in order of precedence
+  if (isRefunded) {
+    return "refunded";
+  }
+
+  if (isCanceled) {
+    return "canceled";
+  }
+
+  if (processingComplete) {
+    return "completed";
+  }
+
+  if (verificationPending) {
+    return "processing";
+  }
+
+  // Default status
+  return "pending";
+};
+
+/**
+ * Check if a transaction is expired based on creation date and processing state
+ * @param {Object} transaction - Transaction data
+ * @param {number} expiryHours - Hours after which pending transaction expires (default: 24)
+ * @returns {boolean} - Whether transaction is expired
+ */
+export const isTransactionExpired = (transaction, expiryHours = 24) => {
+  if (!transaction || transaction.status !== "pending") {
+    return false;
+  }
+
+  const createdAt = new Date(transaction.createdAt);
+  const now = new Date();
+  const diffHours = (now - createdAt) / (1000 * 60 * 60);
+
+  return diffHours > expiryHours;
+};
+
+/**
+ * Get transaction status color for UI display
+ * @param {string} status - Transaction status
+ * @returns {string} - Color code for the status
+ */
+export const getStatusColor = (status) => {
+  const colors = {
+    pending: "#F59E0B", // Amber
+    processing: "#3B82F6", // Blue
+    completed: "#10B981", // Green
+    failed: "#EF4444", // Red
+    refunded: "#8B5CF6", // Purple
+    canceled: "#6B7280", // Gray
+    default: "#6B7280", // Default gray
+  };
+
+  return colors[status] || colors.default;
+};
+
+/**
+ * Calculate total amount including fees
+ * @param {number} amount - Base amount
+ * @param {number} fee - Fee amount
+ * @returns {number} - Total amount
+ */
+export const calculateTotalWithFees = (amount, fee) => {
+  return Math.round((parseFloat(amount) + parseFloat(fee)) * 100) / 100;
 };
