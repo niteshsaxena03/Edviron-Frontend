@@ -58,25 +58,62 @@ export const formatCurrency = (amount, currencyCode = "USD") => {
  * @returns {string} - Display name for the status
  */
 export const getStatusDisplayName = (statusKey) => {
-  return TRANSACTION_STATUSES[statusKey] || statusKey;
+  if (!statusKey) return "";
+
+  const normalizedStatusKey = statusKey.toLowerCase();
+
+  for (const [key, value] of Object.entries(TRANSACTION_STATUSES)) {
+    if (key.toLowerCase() === normalizedStatusKey) {
+      return value;
+    }
+  }
+
+  // If no match found, capitalize the first letter and return
+  return (
+    normalizedStatusKey.charAt(0).toUpperCase() + normalizedStatusKey.slice(1)
+  );
 };
 
 /**
- * Get the display name for a payment method
+ * Get display name for payment method
  * @param {string} methodKey - The payment method key
  * @returns {string} - Display name for the payment method
  */
 export const getPaymentMethodDisplayName = (methodKey) => {
-  return PAYMENT_METHODS[methodKey] || methodKey;
+  if (!methodKey) return "";
+
+  const normalizedMethodKey = methodKey.toLowerCase();
+
+  for (const [key, value] of Object.entries(PAYMENT_METHODS)) {
+    if (key.toLowerCase() === normalizedMethodKey) {
+      return value;
+    }
+  }
+
+  // If no match found, capitalize the first letter and return
+  return (
+    normalizedMethodKey.charAt(0).toUpperCase() + normalizedMethodKey.slice(1)
+  );
 };
 
 /**
- * Get the display name for a transaction type
+ * Get display name for transaction type
  * @param {string} typeKey - The transaction type key
  * @returns {string} - Display name for the transaction type
  */
 export const getTransactionTypeDisplayName = (typeKey) => {
-  return TRANSACTION_TYPES[typeKey] || typeKey;
+  if (!typeKey) return "";
+
+  const normalizedTypeKey = typeKey.toLowerCase();
+
+  for (const [key, value] of Object.entries(TRANSACTION_TYPES)) {
+    if (key.toLowerCase() === normalizedTypeKey) {
+      return value;
+    }
+  }
+
+  // If no match found, capitalize the first letter and return
+  return normalizedTypeKey.charAt(0).toUpperCase() + normalizedTypeKey.slice(1);
 };
 
 /**
@@ -170,6 +207,7 @@ export const generateTransactionReference = (prefix = "TX") => {
  */
 export const calculateTransactionFee = (amount, paymentMethod) => {
   if (!amount || amount <= 0) return 0;
+  if (!paymentMethod) return 0;
 
   const feeRates = {
     credit_card: 0.029,
@@ -187,40 +225,80 @@ export const calculateTransactionFee = (amount, paymentMethod) => {
     crypto: 0.0,
   };
 
-  const rate = feeRates[paymentMethod] || 0.02; // Default rate
-  const fixed = fixedFees[paymentMethod] || 0.25; // Default fixed fee
+  const normalizedMethod = paymentMethod.toLowerCase();
+
+  // Find the matching payment method in a case-insensitive way
+  let rate = 0.02; // Default rate
+  let fixed = 0.25; // Default fixed fee
+
+  for (const [key, value] of Object.entries(feeRates)) {
+    if (key.toLowerCase() === normalizedMethod) {
+      rate = value;
+      fixed = fixedFees[key] || 0.25;
+      break;
+    }
+  }
 
   return amount * rate + fixed;
 };
 
 /**
- * Determine the status of a transaction based on various conditions
+ * Determine transaction status based on various conditions
  * @param {Object} transaction - The transaction object
  * @returns {string} - The determined status
  */
 export const determineTransactionStatus = (transaction) => {
   if (!transaction) return "pending";
 
-  if (transaction.errorCode || transaction.failureReason) {
+  // Normalize existing status if present
+  const currentStatus = transaction.status
+    ? transaction.status.toLowerCase()
+    : "";
+
+  // Check for specific error conditions first
+  if (transaction.error || transaction.failureReason) {
     return "failed";
   }
 
-  if (transaction.refundedAt) {
+  // Check for refund status
+  if (
+    transaction.refunded ||
+    (transaction.refundAmount && transaction.refundAmount > 0) ||
+    currentStatus === "refunded"
+  ) {
     return "refunded";
   }
 
-  if (transaction.canceledAt) {
+  // Check for cancellation
+  if (
+    transaction.canceled ||
+    transaction.canceledAt ||
+    currentStatus === "canceled"
+  ) {
     return "canceled";
   }
 
-  if (transaction.completedAt) {
+  // Check for completion
+  if (
+    transaction.completed ||
+    transaction.completedAt ||
+    currentStatus === "completed" ||
+    currentStatus === "success" ||
+    currentStatus === "succeeded"
+  ) {
     return "completed";
   }
 
-  if (transaction.processingAt) {
+  // Check for processing
+  if (
+    transaction.processing ||
+    currentStatus === "processing" ||
+    currentStatus === "in_progress"
+  ) {
     return "processing";
   }
 
+  // Default to pending
   return "pending";
 };
 
@@ -248,16 +326,22 @@ export const isTransactionExpired = (transaction, expiryHours = 24) => {
  * @returns {string} - CSS class for the status color
  */
 export const getStatusColorClass = (status) => {
+  if (!status) return "text-gray-600 bg-gray-100";
+
+  const normalizedStatus = status.toLowerCase();
+
   const colorMap = {
     pending: "text-yellow-600 bg-yellow-100",
     processing: "text-blue-600 bg-blue-100",
     completed: "text-green-600 bg-green-100",
+    success: "text-green-600 bg-green-100", // Alias for 'completed'
     failed: "text-red-600 bg-red-100",
+    failure: "text-red-600 bg-red-100", // Alias for 'failed'
     refunded: "text-purple-600 bg-purple-100",
     canceled: "text-gray-600 bg-gray-100",
   };
 
-  return colorMap[status] || "text-gray-600 bg-gray-100";
+  return colorMap[normalizedStatus] || "text-gray-600 bg-gray-100";
 };
 
 /**
@@ -281,4 +365,40 @@ export const truncateText = (text, length = 25) => {
   if (text.length <= length) return text;
 
   return `${text.substring(0, length)}...`;
+};
+
+/**
+ * Normalize transaction data from API response
+ * @param {Object} transaction - Raw transaction data from API
+ * @returns {Object} - Normalized transaction data
+ */
+export const normalizeTransaction = (transaction) => {
+  if (!transaction) return null;
+
+  // Extract relevant fields and normalize keys
+  return {
+    id: transaction.collect_id || transaction._id,
+    orderId: transaction.custom_order_id,
+    amount: transaction.order_amount,
+    transactionAmount: transaction.transaction_amount,
+    paymentMethod: transaction.payment_mode?.toLowerCase() || "unknown",
+    paymentDetails: transaction.payment_details || "",
+    status: transaction.status?.toLowerCase() || "pending",
+    paymentTime: transaction.payment_time,
+    gateway: transaction.gateway || "",
+    schoolId: transaction.school_id,
+    studentInfo: transaction.student_info || {},
+    bankReference: transaction.bank_reference || "",
+    // Add any other fields that need normalization
+  };
+};
+
+/**
+ * Normalize array of transactions from API
+ * @param {Array} transactions - Raw transactions array from API
+ * @returns {Array} - Array of normalized transactions
+ */
+export const normalizeTransactions = (transactions) => {
+  if (!transactions || !Array.isArray(transactions)) return [];
+  return transactions.map(normalizeTransaction);
 };
