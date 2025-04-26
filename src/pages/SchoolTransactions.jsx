@@ -60,13 +60,40 @@ const SchoolTransactions = () => {
         schoolId: selectedSchoolId,
       });
 
-      const result = await getTransactionsBySchool(selectedSchoolId, params);
+      const response = await getTransactionsBySchool(selectedSchoolId, params);
+      const data = response.data;
 
-      setTransactions(result.data.transactions);
-      setPagination(result.data.pagination);
+      // Check the response structure and extract transactions and pagination
+      if (data && data.data) {
+        setTransactions(data.data.transactions || []);
+        setPagination(
+          data.data.pagination || {
+            total: 0,
+            page: 1,
+            limit: 10,
+            totalPages: 0,
+          }
+        );
+      } else {
+        setTransactions([]);
+        setPagination({
+          total: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 0,
+        });
+        setError("Unexpected response format");
+      }
     } catch (err) {
       console.error("Error fetching school transactions:", err);
       setError(err.message || "Failed to load transactions");
+      setTransactions([]);
+      setPagination({
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+      });
     } finally {
       setLoading(false);
     }

@@ -21,8 +21,14 @@ const TransactionStatus = () => {
     setTransactionStatus(null);
 
     try {
-      const result = await getTransactionStatus(orderId);
-      setTransactionStatus(result.data);
+      const response = await getTransactionStatus(orderId);
+
+      // Extract transaction data from the nested response structure
+      if (response.data && response.data.data) {
+        setTransactionStatus(response.data.data);
+      } else {
+        setError("Transaction not found or invalid response format");
+      }
       setSearched(true);
     } catch (err) {
       console.error("Error checking transaction status:", err);

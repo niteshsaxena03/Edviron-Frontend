@@ -43,7 +43,7 @@ export const getAllTransactions = async (params = {}) => {
  * @returns {Promise} - Promise with school transactions data
  */
 export const getTransactionsBySchool = (schoolId, queryParams = {}) => {
-  return API.get(`/schools/${schoolId}/transactions`, { params: queryParams });
+  return API.get(`/transactions/school/${schoolId}`, { params: queryParams });
 };
 
 /**
@@ -52,7 +52,7 @@ export const getTransactionsBySchool = (schoolId, queryParams = {}) => {
  * @returns {Promise} - Promise with transaction status data
  */
 export const getTransactionStatus = (orderId) => {
-  return API.get(`/transactions/${orderId}/status`);
+  return API.get(`/transactions/status/${orderId}`);
 };
 
 /**
@@ -61,7 +61,7 @@ export const getTransactionStatus = (orderId) => {
  * @returns {Promise} - Promise with response data
  */
 export const getTransactionStats = (schoolId) => {
-  return API.get(`/schools/${schoolId}/transactions/stats`);
+  return API.get(`/transactions/school/${schoolId}/stats`);
 };
 
 /**
@@ -71,7 +71,7 @@ export const getTransactionStats = (schoolId) => {
  * @returns {Promise} - Promise with response data
  */
 export const exportTransactions = (schoolId, filters = {}) => {
-  return API.get(`/schools/${schoolId}/transactions/export`, {
+  return API.get(`/transactions/school/${schoolId}/export`, {
     params: filters,
     responseType: "blob",
   });
