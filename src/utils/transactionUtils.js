@@ -1,79 +1,82 @@
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
   DATE_FORMAT,
   DATE_TIME_FORMAT,
-  TRANSACTION_STATUS,
+  TRANSACTION_STATUSES,
   PAYMENT_METHODS,
   TRANSACTION_TYPES,
 } from "../config";
 
 /**
- * Format a date string according to the specified format
- * @param {string|Date} date - Date to format
- * @param {string} formatStr - Format string (default from config)
+ * Format a date string to display format
+ * @param {string} dateString - The date string to format
  * @returns {string} - Formatted date string
  */
-export const formatDate = (date, formatStr = DATE_FORMAT) => {
-  if (!date) return "N/A";
+export const formatDate = (dateString) => {
+  if (!dateString) return "";
   try {
-    return format(new Date(date), formatStr);
+    return format(parseISO(dateString), DATE_FORMAT.display);
   } catch (error) {
     console.error("Error formatting date:", error);
-    return "Invalid date";
+    return dateString;
   }
 };
 
 /**
- * Format a datetime string
- * @param {string|Date} date - Date to format
- * @returns {string} - Formatted datetime string
+ * Format a date string to display date and time
+ * @param {string} dateString - The date string to format
+ * @returns {string} - Formatted date and time string
  */
-export const formatDateTime = (date) => {
-  return formatDate(date, DATE_TIME_FORMAT);
+export const formatDateTime = (dateString) => {
+  if (!dateString) return "";
+  try {
+    return format(parseISO(dateString), DATE_TIME_FORMAT.display);
+  } catch (error) {
+    console.error("Error formatting date and time:", error);
+    return dateString;
+  }
 };
 
 /**
- * Format currency amount
- * @param {number} amount - Amount to format
- * @param {string} currency - Currency code (default: USD)
- * @returns {string} - Formatted currency string
+ * Format a currency amount
+ * @param {number} amount - The amount to format
+ * @param {string} currencyCode - The currency code (default: USD)
+ * @returns {string} - Formatted currency amount
  */
-export const formatCurrency = (amount, currency = "USD") => {
-  if (amount === undefined || amount === null) return "N/A";
+export const formatCurrency = (amount, currencyCode = "USD") => {
+  if (amount === null || amount === undefined) return "";
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    currency: currencyCode,
   }).format(amount);
 };
 
 /**
  * Get the display name for a transaction status
- * @param {string} status - Status code
- * @returns {string} - User-friendly status name
+ * @param {string} statusKey - The status key
+ * @returns {string} - Display name for the status
  */
-export const getStatusDisplayName = (status) => {
-  return TRANSACTION_STATUS[status] || "Unknown";
+export const getStatusDisplayName = (statusKey) => {
+  return TRANSACTION_STATUSES[statusKey] || statusKey;
 };
 
 /**
  * Get the display name for a payment method
- * @param {string} method - Payment method code
- * @returns {string} - User-friendly payment method name
+ * @param {string} methodKey - The payment method key
+ * @returns {string} - Display name for the payment method
  */
-export const getPaymentMethodDisplayName = (method) => {
-  return PAYMENT_METHODS[method] || "Unknown";
+export const getPaymentMethodDisplayName = (methodKey) => {
+  return PAYMENT_METHODS[methodKey] || methodKey;
 };
 
 /**
  * Get the display name for a transaction type
- * @param {string} type - Transaction type code
- * @returns {string} - User-friendly transaction type name
+ * @param {string} typeKey - The transaction type key
+ * @returns {string} - Display name for the transaction type
  */
-export const getTransactionTypeDisplayName = (type) => {
-  return TRANSACTION_TYPES[type] || "Unknown";
+export const getTransactionTypeDisplayName = (typeKey) => {
+  return TRANSACTION_TYPES[typeKey] || typeKey;
 };
 
 /**
@@ -147,12 +150,12 @@ export const canRefundTransaction = (transaction) => {
 };
 
 /**
- * Generate a unique transaction reference with optional prefix
- * @param {string} prefix - Optional prefix for the reference (default: 'TX')
- * @returns {string} - Unique transaction reference
+ * Generate a transaction reference number
+ * @param {string} prefix - The prefix for the reference (default: 'TX')
+ * @returns {string} - Generated transaction reference
  */
 export const generateTransactionReference = (prefix = "TX") => {
-  const timestamp = new Date().getTime();
+  const timestamp = new Date().getTime().toString().slice(-8);
   const random = Math.floor(Math.random() * 10000)
     .toString()
     .padStart(4, "0");
@@ -161,86 +164,63 @@ export const generateTransactionReference = (prefix = "TX") => {
 
 /**
  * Calculate transaction fee based on amount and payment method
- * @param {number} amount - Transaction amount
- * @param {string} paymentMethod - Payment method code
- * @returns {number} - Calculated fee
+ * @param {number} amount - The transaction amount
+ * @param {string} paymentMethod - The payment method
+ * @returns {number} - The calculated fee
  */
 export const calculateTransactionFee = (amount, paymentMethod) => {
-  // Default fee rates and fixed fees
+  if (!amount || amount <= 0) return 0;
+
   const feeRates = {
-    credit_card: 0.029, // 2.9%
-    debit_card: 0.015, // 1.5%
-    bank_transfer: 0.01, // 1%
-    wallet: 0.005, // 0.5%
-    cash: 0, // No fee
-    paypal: 0.034, // 3.4%
-    venmo: 0.019, // 1.9%
-    crypto: 0.01, // 1%
-    default: 0.02, // 2% default
+    credit_card: 0.029,
+    debit_card: 0.015,
+    bank_transfer: 0.005,
+    paypal: 0.035,
+    crypto: 0.01,
   };
 
   const fixedFees = {
     credit_card: 0.3,
     debit_card: 0.2,
     bank_transfer: 0.25,
-    wallet: 0,
-    cash: 0,
-    paypal: 0.3,
-    venmo: 0.1,
-    crypto: 0,
-    default: 0.25,
+    paypal: 0.4,
+    crypto: 0.0,
   };
 
-  // Use default if payment method is not recognized
-  const rate = feeRates[paymentMethod] || feeRates.default;
-  const fixedFee = fixedFees[paymentMethod] || fixedFees.default;
+  const rate = feeRates[paymentMethod] || 0.02; // Default rate
+  const fixed = fixedFees[paymentMethod] || 0.25; // Default fixed fee
 
-  // Calculate total fee (percentage + fixed)
-  const percentageFee = amount * rate;
-  const totalFee = percentageFee + fixedFee;
-
-  // Round to 2 decimal places
-  return Math.round(totalFee * 100) / 100;
+  return amount * rate + fixed;
 };
 
 /**
- * Determine transaction status based on various conditions
- * @param {Object} transactionData - Transaction data
- * @returns {string} - Determined status code
+ * Determine the status of a transaction based on various conditions
+ * @param {Object} transaction - The transaction object
+ * @returns {string} - The determined status
  */
-export const determineTransactionStatus = (transactionData) => {
-  const {
-    errorCode,
-    gatewayResponse,
-    isRefunded,
-    isCanceled,
-    processingComplete,
-    verificationPending,
-  } = transactionData;
+export const determineTransactionStatus = (transaction) => {
+  if (!transaction) return "pending";
 
-  // Check for failure conditions first
-  if (errorCode || (gatewayResponse && gatewayResponse.error)) {
+  if (transaction.errorCode || transaction.failureReason) {
     return "failed";
   }
 
-  // Check other statuses in order of precedence
-  if (isRefunded) {
+  if (transaction.refundedAt) {
     return "refunded";
   }
 
-  if (isCanceled) {
+  if (transaction.canceledAt) {
     return "canceled";
   }
 
-  if (processingComplete) {
+  if (transaction.completedAt) {
     return "completed";
   }
 
-  if (verificationPending) {
+  if (transaction.processingAt) {
     return "processing";
   }
 
-  // Default status
   return "pending";
 };
 
@@ -263,22 +243,21 @@ export const isTransactionExpired = (transaction, expiryHours = 24) => {
 };
 
 /**
- * Get transaction status color for UI display
- * @param {string} status - Transaction status
- * @returns {string} - Color code for the status
+ * Get color class for a transaction status
+ * @param {string} status - The transaction status
+ * @returns {string} - CSS class for the status color
  */
-export const getStatusColor = (status) => {
-  const colors = {
-    pending: "#F59E0B", // Amber
-    processing: "#3B82F6", // Blue
-    completed: "#10B981", // Green
-    failed: "#EF4444", // Red
-    refunded: "#8B5CF6", // Purple
-    canceled: "#6B7280", // Gray
-    default: "#6B7280", // Default gray
+export const getStatusColorClass = (status) => {
+  const colorMap = {
+    pending: "text-yellow-600 bg-yellow-100",
+    processing: "text-blue-600 bg-blue-100",
+    completed: "text-green-600 bg-green-100",
+    failed: "text-red-600 bg-red-100",
+    refunded: "text-purple-600 bg-purple-100",
+    canceled: "text-gray-600 bg-gray-100",
   };
 
-  return colors[status] || colors.default;
+  return colorMap[status] || "text-gray-600 bg-gray-100";
 };
 
 /**
@@ -289,4 +268,17 @@ export const getStatusColor = (status) => {
  */
 export const calculateTotalWithFees = (amount, fee) => {
   return Math.round((parseFloat(amount) + parseFloat(fee)) * 100) / 100;
+};
+
+/**
+ * Truncate text with ellipsis
+ * @param {string} text - The text to truncate
+ * @param {number} length - Maximum length before truncation
+ * @returns {string} - Truncated text
+ */
+export const truncateText = (text, length = 25) => {
+  if (!text) return "";
+  if (text.length <= length) return text;
+
+  return `${text.substring(0, length)}...`;
 };
