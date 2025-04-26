@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
 import * as darkModeStyles from "../utils/darkModeStyles";
-import { getRealToken } from "../services/auth.service";
+import { getRealToken, refreshToken } from "../services/auth.service";
 
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,6 +59,8 @@ const Dashboard = () => {
     "refunded",
     "cancelled",
   ];
+
+  const [refreshingToken, setRefreshingToken] = useState(false);
 
   useEffect(() => {
     // Get authentication token first, then fetch transactions
@@ -218,6 +220,18 @@ const Dashboard = () => {
     return new Date(dateString).toLocaleString();
   };
 
+  const handleTokenRefresh = async () => {
+    setRefreshingToken(true);
+    const success = await refreshToken();
+
+    if (success) {
+      // After successful token refresh, try to fetch transactions again
+      fetchTransactions();
+    }
+
+    setRefreshingToken(false);
+  };
+
   return (
     <div
       className={`${darkMode ? "bg-gray-900" : "bg-gray-100"} min-h-screen py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300`}
@@ -286,18 +300,44 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Error message */}
+        {/* Error state */}
         {error && (
-          <div
-            className={`${
-              darkMode
-                ? "bg-red-900 bg-opacity-20 border-red-700"
-                : "bg-red-100 border-red-400"
-            } border text-red-700 px-4 py-3 rounded relative mb-4`}
-            role="alert"
-          >
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
             <strong className="font-bold">Error! </strong>
             <span className="block sm:inline">{error}</span>
+            <div className="mt-2">
+              <button
+                onClick={handleTokenRefresh}
+                disabled={refreshingToken}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-sm"
+              >
+                {refreshingToken
+                  ? "Refreshing Token..."
+                  : "Refresh Authentication Token"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* If transactions are empty but we're not loading, show a refresh button */}
+        {!loading && !error && transactions.length === 0 && (
+          <div
+            className={`${darkMode ? "bg-gray-800 border-yellow-600" : "bg-yellow-100 border-yellow-400"} border text-yellow-700 px-4 py-3 rounded mb-6`}
+          >
+            <p className={darkMode ? "text-yellow-400" : "text-yellow-700"}>
+              No transactions found. Your authentication token may have expired.
+            </p>
+            <div className="mt-2">
+              <button
+                onClick={handleTokenRefresh}
+                disabled={refreshingToken}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-sm"
+              >
+                {refreshingToken
+                  ? "Refreshing Token..."
+                  : "Refresh Authentication Token"}
+              </button>
+            </div>
           </div>
         )}
 

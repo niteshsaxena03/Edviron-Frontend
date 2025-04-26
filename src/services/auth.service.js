@@ -108,3 +108,22 @@ export const isAuthenticated = () => {
 export const getToken = () => {
   return localStorage.getItem("token");
 };
+
+// Refresh authentication token - use this when token is expired
+export const refreshToken = async () => {
+  try {
+    console.log("Refreshing authentication token...");
+    const success = await getRealToken();
+
+    if (success) {
+      console.log("Token refreshed successfully!");
+      return true;
+    } else {
+      console.error("Failed to refresh token");
+      return false;
+    }
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    return false;
+  }
+};

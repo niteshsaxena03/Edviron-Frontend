@@ -6,6 +6,7 @@ import {
   logout as apiLogout,
   getCurrentUser,
   isAuthenticated,
+  refreshToken,
 } from "../services/auth.service";
 
 // Create context
@@ -21,14 +22,32 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tokenRefreshed, setTokenRefreshed] = useState(false);
   const navigate = useNavigate();
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from localStorage and check token validity
   useEffect(() => {
-    const user = getCurrentUser();
-    setCurrentUser(user);
-    setLoading(false);
-  }, []);
+    const initAuth = async () => {
+      try {
+        setLoading(true);
+        const user = getCurrentUser();
+        setCurrentUser(user);
+
+        // If there is a user but token might be expired, try to refresh
+        if (user && !tokenRefreshed) {
+          // Only try to refresh token once to avoid infinite loops
+          setTokenRefreshed(true);
+          await refreshToken();
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, [tokenRefreshed]);
 
   // Register function
   const register = async (userData) => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getTransactionsBySchool } from "../services/transaction.service";
+import { refreshToken } from "../services/auth.service";
 
 const SchoolTransactions = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,6 +27,7 @@ const SchoolTransactions = () => {
     order: order,
   });
   const [selectedSchoolId, setSelectedSchoolId] = useState(schoolId);
+  const [refreshingToken, setRefreshingToken] = useState(false);
 
   // School ID options (normally these would come from an API)
   // Using the one from instructions as example
@@ -122,6 +124,18 @@ const SchoolTransactions = () => {
     setSelectedSchoolId(e.target.value);
   };
 
+  const handleTokenRefresh = async () => {
+    setRefreshingToken(true);
+    const success = await refreshToken();
+
+    if (success) {
+      // After successful token refresh, try to fetch transactions again
+      fetchTransactions();
+    }
+
+    setRefreshingToken(false);
+  };
+
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -183,6 +197,42 @@ const SchoolTransactions = () => {
         >
           <strong className="font-bold">Error! </strong>
           <span className="block sm:inline">{error}</span>
+          {error.includes("fail") ||
+          error.includes("token") ||
+          transactions.length === 0 ? (
+            <div className="mt-2">
+              <button
+                onClick={handleTokenRefresh}
+                disabled={refreshingToken}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-sm"
+              >
+                {refreshingToken
+                  ? "Refreshing Token..."
+                  : "Refresh Authentication Token"}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* If no error message but transactions are empty, also show refresh button */}
+      {!error && selectedSchoolId && transactions.length === 0 && (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4">
+          <p>
+            No transactions found for this school. Your authentication token may
+            have expired.
+          </p>
+          <div className="mt-2">
+            <button
+              onClick={handleTokenRefresh}
+              disabled={refreshingToken}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-sm"
+            >
+              {refreshingToken
+                ? "Refreshing Token..."
+                : "Refresh Authentication Token"}
+            </button>
+          </div>
         </div>
       )}
 
