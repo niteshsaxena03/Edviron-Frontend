@@ -58,6 +58,24 @@ const Login = () => {
     }
   };
 
+  // Function to handle guest login
+  const handleGuestLogin = async () => {
+    setError("");
+    setIsLoading(true);
+
+    try {
+      await login({
+        email: "nitesh04@gmail.com",
+        password: "11111111",
+      });
+      // Navigation is handled in the context
+    } catch (err) {
+      setError(err.message || "Guest login failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div
       className={`min-h-screen flex flex-col justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}
@@ -222,6 +240,23 @@ const Login = () => {
               </button>
             </div>
           </form>
+
+          {/* Guest Login Button */}
+          <div className="mt-4">
+            <button
+              onClick={handleGuestLogin}
+              disabled={isLoading}
+              className={`w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 ${
+                isLoading ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+            >
+              Guest Login
+            </button>
+            <p
+              className={`mt-2 text-xs text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+            >
+            </p>
+          </div>
 
           <div className="mt-6">
             <div className="relative">
