@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getTransactionsBySchool } from "../services/transaction.service";
-import { refreshToken } from "../services/auth.service";
 import axios from "axios";
 import { API_URL } from "../config";
 
@@ -29,13 +27,6 @@ const SchoolTransactions = () => {
     order: order,
   });
   const [selectedSchoolId, setSelectedSchoolId] = useState(schoolId);
-  const [refreshingToken, setRefreshingToken] = useState(false);
-  const [loginInProgress, setLoginInProgress] = useState(false);
-  const [apiStatus, setApiStatus] = useState({
-    checked: false,
-    isRunning: false,
-    message: "",
-  });
 
   // School ID options (normally these would come from an API)
   // Using the one from instructions as example
@@ -79,13 +70,8 @@ const SchoolTransactions = () => {
         return;
       }
 
-      console.log(
-        "Attempting to fetch school transactions with token:",
-        token.substring(0, 20) + "..."
-      );
-
       try {
-        // First try the school-specific endpoint
+        // Try to get transactions for the specific school
         const response = await axios.get(
           `${API_URL}/transactions/school/${selectedSchoolId}`,
           {
@@ -96,12 +82,8 @@ const SchoolTransactions = () => {
           }
         );
 
-        // Log the entire response for debugging
-        console.log("School Transaction API Response:", response);
-
         const data = response.data;
 
-        // Check the response structure and extract transactions and pagination
         if (
           data &&
           data.data &&
@@ -120,14 +102,11 @@ const SchoolTransactions = () => {
           return;
         }
       } catch (err) {
+        // If school-specific endpoint fails, try the generic endpoint
         console.error("Error fetching school-specific transactions:", err);
-        // We'll fall through to the generic endpoint below
       }
 
-      // If we get here, either the school endpoint failed or returned no data
-      // For the assignment, let's try the generic transactions endpoint as a fallback
-      console.log("Falling back to generic transactions endpoint");
-
+      // Fallback to all transactions
       const allTransactionsResponse = await axios.get(
         `${API_URL}/transactions`,
         {
@@ -138,18 +117,16 @@ const SchoolTransactions = () => {
         }
       );
 
-      console.log("All Transactions API Response:", allTransactionsResponse);
-
       if (
         allTransactionsResponse.data &&
         allTransactionsResponse.data.data &&
         allTransactionsResponse.data.data.transactions
       ) {
-        // Map the transactions and add the school ID if it's missing
+        // Map transactions to associate with selected school
         const transactions = allTransactionsResponse.data.data.transactions.map(
           (tx) => ({
             ...tx,
-            school_id: tx.school_id || selectedSchoolId, // Associate with selected school for display
+            school_id: tx.school_id || selectedSchoolId,
           })
         );
 
@@ -163,7 +140,6 @@ const SchoolTransactions = () => {
           }
         );
 
-        // No error since we found transactions
         setError(null);
       } else {
         setTransactions([]);
@@ -221,206 +197,10 @@ const SchoolTransactions = () => {
     setSelectedSchoolId(e.target.value);
   };
 
-  const handleTokenRefresh = async () => {
-    setRefreshingToken(true);
-    const success = await refreshToken();
-
-    if (success) {
-      // After successful token refresh, try to fetch transactions again
-      fetchTransactions();
-    }
-
-    setRefreshingToken(false);
-  };
-
-  // Directly login with test credentials
-  const handleDirectLogin = async () => {
-    setLoginInProgress(true);
-    setError(null);
-
-    try {
-      // Direct login with credentials
-      const response = await axios.post(`${API_URL}/users/login`, {
-        email: "nitesh04@gmail.com",
-        password: "11111111",
-      });
-
-      console.log("Login response:", response.data);
-
-      if (response.data && response.data.data && response.data.data.token) {
-        // Store the token
-        localStorage.setItem("token", response.data.data.token);
-
-        // Store user data if available
-        if (response.data.data.user) {
-          localStorage.setItem("user", JSON.stringify(response.data.data.user));
-        }
-
-        console.log("✅ Successfully logged in with new token!");
-
-        // Fetch transactions again with new token
-        await fetchTransactions();
-        return true;
-      } else {
-        setError("Login successful but no token received");
-        return false;
-      }
-    } catch (error) {
-      console.error("Login error:", error.response?.data || error.message);
-      setError(error.response?.data?.message || "Login failed");
-      return false;
-    } finally {
-      setLoginInProgress(false);
-    }
-  };
-
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString();
-  };
-
-  // Function to check if API is running
-  const checkApiStatus = async () => {
-    setApiStatus({
-      checked: true,
-      isRunning: false,
-      message: "Checking API status...",
-    });
-
-    try {
-      // Try to access the login endpoint which should be available
-      const response = await axios.get(`${API_URL}/users/test-api`, {
-        timeout: 5000,
-        validateStatus: function (status) {
-          return status < 500; // Accept all responses except server errors
-        },
-      });
-
-      if (response.status === 200) {
-        setApiStatus({
-          checked: true,
-          isRunning: true,
-          message: "API is running and accessible",
-        });
-      } else {
-        setApiStatus({
-          checked: true,
-          isRunning: true,
-          message: `API is running but returned status ${response.status}`,
-        });
-      }
-
-      return true;
-    } catch (error) {
-      console.error("API check failed:", error);
-
-      let message =
-        "API seems to be offline. Please ensure the backend server is running.";
-
-      if (error.code === "ECONNABORTED") {
-        message = "API connection timed out. The server may be down.";
-      } else if (error.response) {
-        message = `API returned error: ${error.response.status} ${error.response.statusText}`;
-      } else if (error.request) {
-        message = "No response received from API. The server may be down.";
-      }
-
-      setApiStatus({
-        checked: true,
-        isRunning: false,
-        message,
-      });
-
-      return false;
-    }
-  };
-
-  // Function to directly test the transactions endpoint
-  const testTransactionsEndpoint = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Get current token
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("No authentication token found. Please login first.");
-        setLoading(false);
-        return;
-      }
-
-      console.log("Testing direct endpoint access with token:", token);
-
-      // For the internship assignment: Get ALL transactions instead of filtering by school ID
-      // This is temporary to demonstrate functionality without modifying the database
-      const response = await axios({
-        method: "get",
-        url: `${API_URL}/transactions`, // Using the all transactions endpoint instead of school-specific
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 10000, // 10 second timeout
-      });
-
-      console.log("Direct endpoint test response:", response);
-
-      if (
-        response.data &&
-        response.data.data &&
-        response.data.data.transactions
-      ) {
-        // Map the transactions and add the school ID if it's missing
-        const transactions = response.data.data.transactions.map((tx) => ({
-          ...tx,
-          school_id: tx.school_id || selectedSchoolId, // Associate with selected school for display
-        }));
-
-        setTransactions(transactions);
-        setPagination(
-          response.data.data.pagination || {
-            total: transactions.length,
-            page: 1,
-            limit: 10,
-            totalPages: 1,
-          }
-        );
-
-        setError(null);
-        return true;
-      } else {
-        setError(
-          "Endpoint returned a response, but no transactions data was found"
-        );
-        console.log("Endpoint response structure:", response.data);
-        return false;
-      }
-    } catch (error) {
-      console.error("Direct endpoint test failed:", error);
-
-      let errorMessage = "Failed to access transactions endpoint";
-
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        if (error.response.status === 401) {
-          errorMessage = "Authentication error: Your token has expired";
-        } else {
-          errorMessage = `API error: ${error.response.status} ${error.response.statusText}`;
-        }
-        console.log("Error response data:", error.response.data);
-      } else if (error.request) {
-        // The request was made but no response was received
-        errorMessage = "No response received from API. The server may be down.";
-      }
-
-      setError(errorMessage);
-      return false;
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -455,7 +235,7 @@ const SchoolTransactions = () => {
             </select>
           </div>
         </div>
-        <div className="mt-4 flex justify-end space-x-2">
+        <div className="mt-4 flex justify-end">
           <button
             onClick={fetchTransactions}
             disabled={!selectedSchoolId || loading}
@@ -467,36 +247,7 @@ const SchoolTransactions = () => {
           >
             View Transactions
           </button>
-          <button
-            onClick={testTransactionsEndpoint}
-            disabled={!selectedSchoolId || loading}
-            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 ${
-              !selectedSchoolId || loading
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-purple-700"
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500`}
-          >
-            Test Direct Access
-          </button>
         </div>
-      </div>
-
-      {/* API Status check */}
-      <div className="mb-4 mt-2">
-        <button
-          onClick={checkApiStatus}
-          className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-2 rounded"
-        >
-          Check API Status
-        </button>
-
-        {apiStatus.checked && (
-          <div
-            className={`mt-2 p-2 rounded text-sm ${apiStatus.isRunning ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-          >
-            {apiStatus.message}
-          </div>
-        )}
       </div>
 
       {/* Error message */}
@@ -507,58 +258,6 @@ const SchoolTransactions = () => {
         >
           <strong className="font-bold">Error! </strong>
           <span className="block sm:inline">{error}</span>
-          {error.includes("fail") ||
-          error.includes("token") ||
-          transactions.length === 0 ? (
-            <div className="mt-2 flex space-x-2">
-              <button
-                onClick={handleTokenRefresh}
-                disabled={refreshingToken || loginInProgress}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-sm"
-              >
-                {refreshingToken
-                  ? "Refreshing Token..."
-                  : "Refresh Authentication Token"}
-              </button>
-
-              <button
-                onClick={handleDirectLogin}
-                disabled={loginInProgress || refreshingToken}
-                className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-sm"
-              >
-                {loginInProgress ? "Logging in..." : "Login Directly"}
-              </button>
-            </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* If no error message but transactions are empty, also show refresh button */}
-      {!error && selectedSchoolId && transactions.length === 0 && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4">
-          <p>
-            No transactions found for this school. Your authentication token may
-            have expired.
-          </p>
-          <div className="mt-2 flex space-x-2">
-            <button
-              onClick={handleTokenRefresh}
-              disabled={refreshingToken || loginInProgress}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-sm"
-            >
-              {refreshingToken
-                ? "Refreshing Token..."
-                : "Refresh Authentication Token"}
-            </button>
-
-            <button
-              onClick={handleDirectLogin}
-              disabled={loginInProgress || refreshingToken}
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-sm"
-            >
-              {loginInProgress ? "Logging in..." : "Login Directly"}
-            </button>
-          </div>
         </div>
       )}
 
