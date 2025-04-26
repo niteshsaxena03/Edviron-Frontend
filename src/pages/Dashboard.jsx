@@ -51,13 +51,13 @@ const Dashboard = () => {
   // Status options - updated to match backend values
   const statusOptions = [
     "All",
-    "success",
-    "pending",
-    "failed",
-    "processing",
-    "completed",
-    "refunded",
-    "cancelled",
+    "SUCCESS",
+    "PENDING",
+    "FAILED",
+    "PROCESSING",
+    "COMPLETED",
+    "REFUNDED",
+    "CANCELLED",
   ];
 
   const [refreshingToken, setRefreshingToken] = useState(false);
