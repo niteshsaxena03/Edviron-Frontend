@@ -69,7 +69,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (authenticated) {
-      fetchTransactions();
+      // Only fetch from server if sorting field is not client-side sorted
+      if (
+        sortConfig.field !== "transaction_amount" &&
+        sortConfig.field !== "order_amount"
+      ) {
+        fetchTransactions();
+      }
     }
   }, [
     authenticated,
@@ -124,12 +130,24 @@ const Dashboard = () => {
 
       if (result && result.data) {
         // Process the transactions to normalize status values
-        const normalizedTransactions =
+        let normalizedTransactions =
           result.data.transactions?.map((tx) => ({
             ...tx,
             // Convert status to lowercase for consistency
             status: tx.status?.toLowerCase() || "pending",
           })) || [];
+
+        // Apply client-side sorting if sort field is transaction_amount or order_amount
+        if (
+          sortConfig.field === "transaction_amount" ||
+          sortConfig.field === "order_amount"
+        ) {
+          normalizedTransactions = normalizedTransactions.sort((a, b) => {
+            const valA = parseFloat(a[sortConfig.field] || 0);
+            const valB = parseFloat(b[sortConfig.field] || 0);
+            return sortConfig.order === "asc" ? valA - valB : valB - valA;
+          });
+        }
 
         console.log("Normalized transactions:", normalizedTransactions);
 
@@ -183,13 +201,31 @@ const Dashboard = () => {
   };
 
   const handleSortChange = (field) => {
+    // Update sort configuration in state
+    const newOrder =
+      sortConfig.field === field && sortConfig.order === "asc" ? "desc" : "asc";
+
     setSortConfig({
       field,
-      order:
-        sortConfig.field === field && sortConfig.order === "asc"
-          ? "desc"
-          : "asc",
+      order: newOrder,
     });
+
+    // Apply client-side sorting for amount fields
+    if (field === "transaction_amount" || field === "order_amount") {
+      // Create a sorted copy of the transactions array
+      const sortedTransactions = [...transactions].sort((a, b) => {
+        // Parse the values as floats to ensure proper numeric comparison
+        const valA = parseFloat(a[field] || 0);
+        const valB = parseFloat(b[field] || 0);
+
+        // Apply the sort order
+        return newOrder === "asc" ? valA - valB : valB - valA;
+      });
+
+      // Update the transactions with the sorted array
+      setTransactions(sortedTransactions);
+    }
+    // For other fields, the sorting will happen server-side via the useEffect
   };
 
   const handleStatusFilterChange = (e) => {
@@ -460,50 +496,127 @@ const Dashboard = () => {
                       className={darkModeStyles.getTableHeaderCellClass(
                         darkMode
                       )}
+                      onClick={() => handleSortChange("collect_id")}
+                      style={{ cursor: "pointer" }}
                     >
                       Transaction ID
+                      {sortConfig.field === "collect_id" && (
+                        <span className="ml-1">
+                          {sortConfig.order === "asc" ? (
+                            <FaArrowUp className="inline" />
+                          ) : (
+                            <FaArrowDown className="inline" />
+                          )}
+                        </span>
+                      )}
                     </th>
                     <th
                       className={darkModeStyles.getTableHeaderCellClass(
                         darkMode
                       )}
+                      onClick={() => handleSortChange("school_id")}
+                      style={{ cursor: "pointer" }}
                     >
                       School ID
+                      {sortConfig.field === "school_id" && (
+                        <span className="ml-1">
+                          {sortConfig.order === "asc" ? (
+                            <FaArrowUp className="inline" />
+                          ) : (
+                            <FaArrowDown className="inline" />
+                          )}
+                        </span>
+                      )}
                     </th>
                     <th
                       className={darkModeStyles.getTableHeaderCellClass(
                         darkMode
                       )}
+                      onClick={() => handleSortChange("gateway")}
+                      style={{ cursor: "pointer" }}
                     >
                       Gateway
+                      {sortConfig.field === "gateway" && (
+                        <span className="ml-1">
+                          {sortConfig.order === "asc" ? (
+                            <FaArrowUp className="inline" />
+                          ) : (
+                            <FaArrowDown className="inline" />
+                          )}
+                        </span>
+                      )}
                     </th>
                     <th
                       className={darkModeStyles.getTableHeaderCellClass(
                         darkMode
                       )}
+                      onClick={() => handleSortChange("order_amount")}
+                      style={{ cursor: "pointer" }}
                     >
                       Order Amount
+                      {sortConfig.field === "order_amount" && (
+                        <span className="ml-1">
+                          {sortConfig.order === "asc" ? (
+                            <FaArrowUp className="inline" />
+                          ) : (
+                            <FaArrowDown className="inline" />
+                          )}
+                        </span>
+                      )}
                     </th>
                     <th
                       className={darkModeStyles.getTableHeaderCellClass(
                         darkMode
                       )}
+                      onClick={() => handleSortChange("transaction_amount")}
+                      style={{ cursor: "pointer" }}
                     >
                       Transaction Amount
+                      {sortConfig.field === "transaction_amount" && (
+                        <span className="ml-1">
+                          {sortConfig.order === "asc" ? (
+                            <FaArrowUp className="inline" />
+                          ) : (
+                            <FaArrowDown className="inline" />
+                          )}
+                        </span>
+                      )}
                     </th>
                     <th
                       className={darkModeStyles.getTableHeaderCellClass(
                         darkMode
                       )}
+                      onClick={() => handleSortChange("status")}
+                      style={{ cursor: "pointer" }}
                     >
                       Status
+                      {sortConfig.field === "status" && (
+                        <span className="ml-1">
+                          {sortConfig.order === "asc" ? (
+                            <FaArrowUp className="inline" />
+                          ) : (
+                            <FaArrowDown className="inline" />
+                          )}
+                        </span>
+                      )}
                     </th>
                     <th
                       className={darkModeStyles.getTableHeaderCellClass(
                         darkMode
                       )}
+                      onClick={() => handleSortChange("payment_time")}
+                      style={{ cursor: "pointer" }}
                     >
                       Payment Time
+                      {sortConfig.field === "payment_time" && (
+                        <span className="ml-1">
+                          {sortConfig.order === "asc" ? (
+                            <FaArrowUp className="inline" />
+                          ) : (
+                            <FaArrowDown className="inline" />
+                          )}
+                        </span>
+                      )}
                     </th>
                   </tr>
                 </thead>
