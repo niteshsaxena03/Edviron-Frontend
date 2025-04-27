@@ -1,7 +1,4 @@
-import axios from "axios";
-import { API_URL } from "../config";
-
-const API_ENDPOINT = `${API_URL}/transactions`;
+import api from "./api";
 
 /**
  * Fetch transactions with optional filters and pagination
@@ -10,7 +7,7 @@ const API_ENDPOINT = `${API_URL}/transactions`;
  */
 export const getTransactions = async (params = {}) => {
   try {
-    const response = await axios.get(API_ENDPOINT, { params });
+    const response = await api.get("/transactions", { params });
     return response.data;
   } catch (error) {
     console.error("Error fetching transactions:", error);
@@ -25,7 +22,7 @@ export const getTransactions = async (params = {}) => {
  */
 export const getTransactionById = async (id) => {
   try {
-    const response = await axios.get(`${API_ENDPOINT}/${id}`);
+    const response = await api.get(`/transactions/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching transaction ${id}:`, error);
@@ -40,7 +37,7 @@ export const getTransactionById = async (id) => {
  */
 export const createTransaction = async (transaction) => {
   try {
-    const response = await axios.post(API_ENDPOINT, transaction);
+    const response = await api.post("/transactions", transaction);
     return response.data;
   } catch (error) {
     console.error("Error creating transaction:", error);
@@ -56,7 +53,7 @@ export const createTransaction = async (transaction) => {
  */
 export const updateTransaction = async (id, transaction) => {
   try {
-    const response = await axios.put(`${API_ENDPOINT}/${id}`, transaction);
+    const response = await api.put(`/transactions/${id}`, transaction);
     return response.data;
   } catch (error) {
     console.error(`Error updating transaction ${id}:`, error);
@@ -71,7 +68,7 @@ export const updateTransaction = async (id, transaction) => {
  */
 export const deleteTransaction = async (id) => {
   try {
-    const response = await axios.delete(`${API_ENDPOINT}/${id}`);
+    const response = await api.delete(`/transactions/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error deleting transaction ${id}:`, error);
@@ -86,7 +83,7 @@ export const deleteTransaction = async (id) => {
  */
 export const exportTransactionsToCSV = async (filters = {}) => {
   try {
-    const response = await axios.get(`${API_ENDPOINT}/export`, {
+    const response = await api.get(`/transactions/export`, {
       params: filters,
       responseType: "blob",
     });
@@ -118,10 +115,7 @@ export const exportTransactionsToCSV = async (filters = {}) => {
  */
 export const processRefund = async (id, refundData) => {
   try {
-    const response = await axios.post(
-      `${API_ENDPOINT}/${id}/refund`,
-      refundData
-    );
+    const response = await api.post(`/transactions/${id}/refund`, refundData);
     return response.data;
   } catch (error) {
     console.error(`Error processing refund for transaction ${id}:`, error);

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import axios from "axios";
-import { API_URL } from "../config";
+import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
+import { useTheme } from "../context/ThemeContext";
 
 const SchoolTransactions = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,45 +42,28 @@ const SchoolTransactions = () => {
   }, [page, limit, sortConfig.field, sortConfig.order, selectedSchoolId]);
 
   const fetchTransactions = async () => {
-    if (!selectedSchoolId) return;
-
     setLoading(true);
     setError(null);
 
+    if (!selectedSchoolId) {
+      setError("Please select a school first");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Build query parameters
-      const params = {
-        page,
-        limit,
-        sort: sortConfig.field,
-        order: sortConfig.order,
-      };
-
-      // Update URL params
-      setSearchParams({
-        ...params,
-        schoolId: selectedSchoolId,
-      });
-
-      // Get current token from localStorage
       const token = localStorage.getItem("token");
-
       if (!token) {
-        setError("No authentication token found. Please login.");
+        setError("Authentication token is missing. Please login again.");
         setLoading(false);
         return;
       }
 
       try {
         // Try to get transactions for the specific school
-        const response = await axios.get(
-          `${API_URL}/transactions/school/${selectedSchoolId}`,
-          {
-            params,
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        const response = await api.get(
+          `/transactions/school/${selectedSchoolId}`,
+          { params }
         );
 
         const data = response.data;
@@ -107,15 +91,9 @@ const SchoolTransactions = () => {
       }
 
       // Fallback to all transactions
-      const allTransactionsResponse = await axios.get(
-        `${API_URL}/transactions`,
-        {
-          params,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const allTransactionsResponse = await api.get(`/transactions`, {
+        params,
+      });
 
       if (
         allTransactionsResponse.data &&

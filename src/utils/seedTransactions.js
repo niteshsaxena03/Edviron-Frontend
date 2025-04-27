@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Base URL for API requests
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://edviron-backend-2.onrender.com/api";
 
 // Function to create a transaction
 const createTransaction = async (data, token) => {
