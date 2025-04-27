@@ -1,8 +1,7 @@
 import axios from "axios";
 
 // Create axios instance with base URL
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://edviron-backend-2.onrender.com/api";
+const API_URL ="https://edviron-backend-2.onrender.com/api";
 
 const api = axios.create({
   baseURL: API_URL,
