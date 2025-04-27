@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Create axios instance with base URL
 const API_URL ="https://edviron-backend-2.onrender.com/api";
 
 const api = axios.create({
@@ -10,7 +9,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for adding the auth token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");

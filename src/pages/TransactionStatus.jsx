@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { getTransactionStatus } from "../services/transaction.service";
+import { useTheme } from "../context/ThemeContext";
+import * as darkModeStyles from "../utils/darkModeStyles";
 
 const TransactionStatus = () => {
   const [orderId, setOrderId] = useState("");
@@ -7,6 +9,7 @@ const TransactionStatus = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searched, setSearched] = useState(false);
+  const { darkMode } = useTheme();
 
   const handleCheck = async (e) => {
     e.preventDefault();
@@ -40,16 +43,18 @@ const TransactionStatus = () => {
 
   // Get status badge class based on transaction status
   const getStatusBadgeClass = (status) => {
+    const baseClass =
+      "px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full";
     switch (status?.toLowerCase()) {
       case "success":
-        return "bg-green-100 text-green-800";
+        return `${baseClass} ${darkMode ? "bg-green-800 text-green-100" : "bg-green-100 text-green-800"}`;
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return `${baseClass} ${darkMode ? "bg-yellow-800 text-yellow-100" : "bg-yellow-100 text-yellow-800"}`;
       case "failed":
       case "failure":
-        return "bg-red-100 text-red-800";
+        return `${baseClass} ${darkMode ? "bg-red-800 text-red-100" : "bg-red-100 text-red-800"}`;
       default:
-        return "bg-gray-100 text-gray-800";
+        return `${baseClass} ${darkMode ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-800"}`;
     }
   };
 
@@ -66,15 +71,15 @@ const TransactionStatus = () => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+    <div className={darkModeStyles.getContentContainerClass(darkMode)}>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
+        <h1 className={darkModeStyles.getHeaderClass(darkMode)}>
           Transaction Status Check
         </h1>
       </div>
 
       {/* Search Form */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
+      <div className={darkModeStyles.getFilterContainerClass(darkMode)}>
         <form
           onSubmit={handleCheck}
           className="flex flex-col sm:flex-row gap-4"
@@ -82,7 +87,7 @@ const TransactionStatus = () => {
           <div className="flex-grow">
             <label
               htmlFor="orderId"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className={darkModeStyles.getLabelClass(darkMode)}
             >
               Order ID / Transaction ID
             </label>
@@ -92,16 +97,18 @@ const TransactionStatus = () => {
               value={orderId}
               onChange={(e) => setOrderId(e.target.value)}
               placeholder="Enter Order ID or Transaction ID"
-              className="w-full rounded-md border border-gray-300 shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className={darkModeStyles.getInputClass(darkMode)}
             />
           </div>
           <div className="self-end">
             <button
               type="submit"
               disabled={loading}
-              className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 ${
-                loading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 h-[38px]`}
+              className={
+                loading
+                  ? darkModeStyles.getDisabledButtonClass(darkMode)
+                  : darkModeStyles.getPrimaryButtonClass(darkMode) + " h-[38px]"
+              }
             >
               {loading ? (
                 <>
@@ -138,7 +145,7 @@ const TransactionStatus = () => {
       {/* Error message */}
       {error && (
         <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          className={`${darkMode ? "bg-red-900 border-red-800 text-red-100" : "bg-red-100 border-red-400 text-red-700"} border px-4 py-3 rounded relative mb-4 transition-colors duration-300`}
           role="alert"
         >
           <strong className="font-bold">Error! </strong>
@@ -150,82 +157,124 @@ const TransactionStatus = () => {
       {searched && !loading && !error && (
         <div className="mt-6">
           {transactionStatus ? (
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-              <div className="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
+            <div
+              className={`${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border rounded-lg shadow-sm overflow-hidden transition-colors duration-300`}
+            >
+              <div
+                className={`px-4 py-5 sm:px-6 ${darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"} border-b transition-colors duration-300`}
+              >
+                <h3
+                  className={`text-lg leading-6 font-medium ${darkMode ? "text-white" : "text-gray-900"} transition-colors duration-300`}
+                >
                   Transaction Details
                 </h3>
-                <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                <p
+                  className={`mt-1 max-w-2xl text-sm ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                >
                   Detailed information about the transaction
                 </p>
               </div>
-              <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
+              <div
+                className={`${darkMode ? "border-gray-700" : "border-gray-200"} border-t px-4 py-5 sm:p-6 transition-colors duration-300`}
+              >
                 <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
+                    <dt
+                      className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                    >
                       Transaction ID
                     </dt>
-                    <dd className="mt-1 text-sm text-gray-900">
+                    <dd
+                      className={`mt-1 text-sm ${darkMode ? "text-white" : "text-gray-900"} transition-colors duration-300`}
+                    >
                       {transactionStatus.collect_id || "N/A"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
+                    <dt
+                      className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                    >
                       Order ID
                     </dt>
-                    <dd className="mt-1 text-sm text-gray-900">
+                    <dd
+                      className={`mt-1 text-sm ${darkMode ? "text-white" : "text-gray-900"} transition-colors duration-300`}
+                    >
                       {transactionStatus.custom_order_id || "N/A"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
+                    <dt
+                      className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                    >
                       Status
                     </dt>
                     <dd className="mt-1">
                       <span
-                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(transactionStatus.status)}`}
+                        className={getStatusBadgeClass(
+                          transactionStatus.status
+                        )}
                       >
                         {transactionStatus.status || "N/A"}
                       </span>
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
+                    <dt
+                      className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                    >
                       Payment Gateway
                     </dt>
-                    <dd className="mt-1 text-sm text-gray-900">
+                    <dd
+                      className={`mt-1 text-sm ${darkMode ? "text-white" : "text-gray-900"} transition-colors duration-300`}
+                    >
                       {transactionStatus.gateway || "N/A"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
+                    <dt
+                      className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                    >
                       Order Amount
                     </dt>
-                    <dd className="mt-1 text-sm text-gray-900">
+                    <dd
+                      className={`mt-1 text-sm ${darkMode ? "text-white" : "text-gray-900"} transition-colors duration-300`}
+                    >
                       {formatAmount(transactionStatus.order_amount)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
+                    <dt
+                      className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                    >
                       Transaction Amount
                     </dt>
-                    <dd className="mt-1 text-sm text-gray-900">
+                    <dd
+                      className={`mt-1 text-sm ${darkMode ? "text-white" : "text-gray-900"} transition-colors duration-300`}
+                    >
                       {formatAmount(transactionStatus.transaction_amount)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
+                    <dt
+                      className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                    >
                       School ID
                     </dt>
-                    <dd className="mt-1 text-sm text-gray-900">
+                    <dd
+                      className={`mt-1 text-sm ${darkMode ? "text-white" : "text-gray-900"} transition-colors duration-300`}
+                    >
                       {transactionStatus.school_id || "N/A"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
+                    <dt
+                      className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+                    >
                       Payment Time
                     </dt>
-                    <dd className="mt-1 text-sm text-gray-900">
+                    <dd
+                      className={`mt-1 text-sm ${darkMode ? "text-white" : "text-gray-900"} transition-colors duration-300`}
+                    >
                       {formatDate(transactionStatus.payment_time)}
                     </dd>
                   </div>
@@ -233,9 +282,11 @@ const TransactionStatus = () => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <div
+              className={`text-center py-12 ${darkMode ? "bg-gray-700" : "bg-gray-50"} rounded-lg transition-colors duration-300`}
+            >
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className={`mx-auto h-12 w-12 ${darkMode ? "text-gray-500" : "text-gray-400"} transition-colors duration-300`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -247,10 +298,14 @@ const TransactionStatus = () => {
                   d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
+              <h3
+                className={`mt-2 text-sm font-medium ${darkMode ? "text-gray-100" : "text-gray-900"} transition-colors duration-300`}
+              >
                 No transaction found
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p
+                className={`mt-1 text-sm ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+              >
                 We couldn't find a transaction with the provided ID.
               </p>
             </div>
@@ -260,9 +315,11 @@ const TransactionStatus = () => {
 
       {/* Initial state - no search yet */}
       {!searched && !loading && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
+        <div
+          className={`text-center py-12 ${darkMode ? "bg-gray-700" : "bg-gray-50"} rounded-lg transition-colors duration-300`}
+        >
           <svg
-            className="mx-auto h-12 w-12 text-gray-400"
+            className={`mx-auto h-12 w-12 ${darkMode ? "text-gray-500" : "text-gray-400"} transition-colors duration-300`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -280,10 +337,14 @@ const TransactionStatus = () => {
               d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">
+          <h3
+            className={`mt-2 text-sm font-medium ${darkMode ? "text-gray-100" : "text-gray-900"} transition-colors duration-300`}
+          >
             Check transaction status
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p
+            className={`mt-1 text-sm ${darkMode ? "text-gray-300" : "text-gray-500"} transition-colors duration-300`}
+          >
             Enter an Order ID or Transaction ID to check its current status.
           </p>
         </div>
