@@ -1,6 +1,6 @@
 // API configuration
 export const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  import.meta.env.VITE_API_URL || "https://edviron-backend-2.onrender.com/api";
 
 // Authentication constants
 export const TOKEN_KEY = "auth_token";

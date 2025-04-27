@@ -102,7 +102,7 @@ export const getRealToken = async () => {
 export const refreshToken = async () => {
   try {
     // Use the guest credentials to get a new token
-    const response = await axios.post(`${API_URL}/users/login`, {
+    const response = await api.post("/users/login", {
       email: "nitesh04@gmail.com",
       password: "11111111",
     });

@@ -1,6 +1,6 @@
 // API Configuration
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  import.meta.env.VITE_API_URL || "https://edviron-backend-2.onrender.com/api";
 
 // Date Formats
 export const DATE_FORMAT = "MM/dd/yyyy";
