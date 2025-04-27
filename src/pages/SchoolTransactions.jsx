@@ -59,6 +59,20 @@ const SchoolTransactions = () => {
         return;
       }
 
+      // Build query parameters
+      const params = {
+        page,
+        limit,
+        sort: sortConfig.field,
+        order: sortConfig.order,
+      };
+
+      // Update URL params
+      setSearchParams({
+        ...params,
+        schoolId: selectedSchoolId,
+      });
+
       try {
         // Try to get transactions for the specific school
         const response = await api.get(
