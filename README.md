@@ -1,4 +1,7 @@
 # School Payment Portal - Frontend
+
+> **Note for First-Time Users**: Due to the free tier hosting on Render, the backend server may take up to 5 minutes to respond on the first request. This is a normal behavior as the server needs to "wake up" from sleep mode. Subsequent requests will be much faster. Thank you for your patience!
+
 <img width="1440" alt="Screenshot 2025-04-29 at 4 06 54 PM" src="https://github.com/user-attachments/assets/f77479fe-b5de-467e-a087-e9adf4028644" />
 <img width="1440" alt="Screenshot 2025-04-29 at 4 07 35 PM" src="https://github.com/user-attachments/assets/e213b1d4-95c3-43f3-b2d8-c45a19ceeb62" />
 <img width="1440" alt="Screenshot 2025-04-29 at 4 07 47 PM" src="https://github.com/user-attachments/assets/a51a469d-490e-4b7d-beaf-707217d3b818" />
