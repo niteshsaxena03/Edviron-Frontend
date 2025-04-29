@@ -15,7 +15,6 @@ const SignUp = () => {
 
   const { register } = useAuth();
 
-  // Initialize dark mode from localStorage if available
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode");
     if (savedMode) {
@@ -23,7 +22,6 @@ const SignUp = () => {
     }
   }, []);
 
-  // Update localStorage and apply dark mode class when darkMode state changes
   useEffect(() => {
     localStorage.setItem("darkMode", JSON.stringify(darkMode));
     if (darkMode) {
@@ -49,13 +47,11 @@ const SignUp = () => {
     e.preventDefault();
     setError("");
 
-    // Validate password match
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
-    // Validate password strength
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters long");
       return;
@@ -64,10 +60,8 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      // Remove confirmPassword as it's not needed in the API
       const { confirmPassword, ...registerData } = formData;
       await register(registerData);
-      // No need to navigate here since it's handled in the context
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
     } finally {
@@ -79,7 +73,6 @@ const SignUp = () => {
     <div
       className={`min-h-screen flex flex-col justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}
     >
-      {/* Dark Mode Toggle */}
       <div className="absolute top-4 right-4 sm:top-8 sm:right-8">
         <button
           onClick={toggleDarkMode}
@@ -87,7 +80,6 @@ const SignUp = () => {
           aria-label="Toggle Dark Mode"
         >
           {darkMode ? (
-            // Sun icon
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 sm:h-6 sm:w-6"
@@ -103,7 +95,6 @@ const SignUp = () => {
               />
             </svg>
           ) : (
-            // Moon icon
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 sm:h-6 sm:w-6"

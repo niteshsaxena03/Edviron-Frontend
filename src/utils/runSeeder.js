@@ -1,9 +1,7 @@
 import { seedTransactions, login } from "./seedTransactions.js";
 
-// Number of transactions to create
 const COUNT = 10;
 
-// Change these credentials to match your system
 const EMAIL = "nitesh04@gmail.com";
 const PASSWORD = "11111111";
 
@@ -41,5 +39,4 @@ async function runSeeder() {
   }
 }
 
-// Run the seeder
 runSeeder();

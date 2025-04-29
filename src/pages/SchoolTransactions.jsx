@@ -9,7 +9,6 @@ const SchoolTransactions = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { darkMode } = useTheme();
 
-  // Get query params with defaults
   const page = parseInt(searchParams.get("page")) || 1;
   const limit = parseInt(searchParams.get("limit")) || 10;
   const sort = searchParams.get("sort") || "payment_time";
@@ -31,8 +30,6 @@ const SchoolTransactions = () => {
   });
   const [selectedSchoolId, setSelectedSchoolId] = useState(schoolId);
 
-  // School ID options (normally these would come from an API)
-  // Using the one from instructions as example
   const schoolIdOptions = [
     { id: "65b0e6293e9f76a9694d84b4", name: "Demo School" },
   ];
@@ -61,7 +58,6 @@ const SchoolTransactions = () => {
         return;
       }
 
-      // Build query parameters
       const params = {
         page,
         limit,
@@ -69,14 +65,12 @@ const SchoolTransactions = () => {
         order: sortConfig.order,
       };
 
-      // Update URL params
       setSearchParams({
         ...params,
         schoolId: selectedSchoolId,
       });
 
       try {
-        // Try to get transactions for the specific school
         const response = await api.get(
           `/transactions/school/${selectedSchoolId}`,
           { params }
@@ -102,11 +96,9 @@ const SchoolTransactions = () => {
           return;
         }
       } catch (err) {
-        // If school-specific endpoint fails, try the generic endpoint
         console.error("Error fetching school-specific transactions:", err);
       }
 
-      // Fallback to all transactions
       const allTransactionsResponse = await api.get(`/transactions`, {
         params,
       });
@@ -116,7 +108,6 @@ const SchoolTransactions = () => {
         allTransactionsResponse.data.data &&
         allTransactionsResponse.data.data.transactions
       ) {
-        // Map transactions to associate with selected school
         const transactions = allTransactionsResponse.data.data.transactions.map(
           (tx) => ({
             ...tx,
@@ -191,7 +182,6 @@ const SchoolTransactions = () => {
     setSelectedSchoolId(e.target.value);
   };
 
-  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString();
@@ -205,7 +195,6 @@ const SchoolTransactions = () => {
         </h1>
       </div>
 
-      {/* School selection */}
       <div className={darkModeStyles.getFilterContainerClass(darkMode)}>
         <h2 className={darkModeStyles.getSectionHeaderClass(darkMode)}>
           Select School
@@ -244,7 +233,6 @@ const SchoolTransactions = () => {
         </div>
       </div>
 
-      {/* Error message */}
       {error && (
         <div
           className={`${darkMode ? "bg-red-900 border-red-800 text-red-100" : "bg-red-100 border-red-400 text-red-700"} border px-4 py-3 rounded relative mb-4 transition-colors duration-300`}
@@ -255,7 +243,6 @@ const SchoolTransactions = () => {
         </div>
       )}
 
-      {/* Loading indicator */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div
@@ -264,7 +251,6 @@ const SchoolTransactions = () => {
         </div>
       ) : (
         <>
-          {/* Message for no school selected */}
           {!selectedSchoolId && (
             <div
               className={`text-center py-12 ${darkMode ? "bg-gray-700" : "bg-gray-50"} rounded-lg transition-colors duration-300`}
@@ -282,7 +268,6 @@ const SchoolTransactions = () => {
             </div>
           )}
 
-          {/* Transactions table */}
           {selectedSchoolId && (
             <>
               <div className="overflow-x-auto">
@@ -481,7 +466,6 @@ const SchoolTransactions = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
               {transactions.length > 0 && (
                 <div className={darkModeStyles.getPaginationClass(darkMode)}>
                   <div className="flex flex-1 justify-between sm:hidden">
@@ -555,10 +539,9 @@ const SchoolTransactions = () => {
                           </svg>
                         </button>
 
-                        {/* Page numbers */}
                         {[...Array(pagination.totalPages)].map((_, idx) => {
                           const pageNumber = idx + 1;
-                          // Only show a window of 5 pages centered around current page
+
                           if (
                             pageNumber === 1 ||
                             pageNumber === pagination.totalPages ||
@@ -579,7 +562,6 @@ const SchoolTransactions = () => {
                             );
                           }
 
-                          // Show ellipsis
                           if (
                             (pageNumber === 2 && page > 4) ||
                             (pageNumber === pagination.totalPages - 1 &&

@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 const ProtectedRoute = () => {
   const { authenticated, loading } = useAuth();
 
-  // Show loading indicator while checking authentication status
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -13,7 +12,6 @@ const ProtectedRoute = () => {
     );
   }
 
-  // Redirect to login if not authenticated
   return authenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 

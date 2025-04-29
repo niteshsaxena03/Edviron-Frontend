@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL ="https://edviron-backend-2.onrender.com/api";
+const API_URL = "https://edviron-backend-2.onrender.com/api";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -22,19 +22,15 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for handling common errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const { response } = error;
 
-    // Handle token expiration
     if (response && response.status === 401) {
       console.log("Unauthorized access detected, redirecting to login");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      // In a real app, you would redirect to login here
-      // window.location.href = "/login";
     }
 
     return Promise.reject(error);

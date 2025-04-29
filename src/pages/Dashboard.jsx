@@ -12,7 +12,6 @@ const Dashboard = () => {
   const { currentUser, authenticated } = useAuth();
   const { darkMode } = useTheme();
 
-  // Get query params with defaults
   const page = parseInt(searchParams.get("page")) || 1;
   const limit = parseInt(searchParams.get("limit")) || 10;
   const sort = searchParams.get("sort") || "payment_time";
@@ -37,7 +36,6 @@ const Dashboard = () => {
     successfulCount: 0,
   });
 
-  // Filter states
   const [statusFilter, setStatusFilter] = useState(status);
   const [dateRange, setDateRange] = useState({
     startDate: startDate,
@@ -48,7 +46,6 @@ const Dashboard = () => {
     order: order,
   });
 
-  // Status options - updated to match backend values
   const statusOptions = [
     "All",
     "SUCCESS",
@@ -63,13 +60,11 @@ const Dashboard = () => {
   const [refreshingToken, setRefreshingToken] = useState(false);
 
   useEffect(() => {
-    // Get authentication token first, then fetch transactions
     ensureAuthentication();
   }, []);
 
   useEffect(() => {
     if (authenticated) {
-      // Only fetch from server if sorting field is not client-side sorted
       if (
         sortConfig.field !== "transaction_amount" &&
         sortConfig.field !== "order_amount"
@@ -88,7 +83,6 @@ const Dashboard = () => {
     dateRange.endDate,
   ]);
 
-  // Make sure we're authenticated before fetching data
   const ensureAuthentication = async () => {
     try {
       if (!authenticated) {
@@ -105,7 +99,6 @@ const Dashboard = () => {
     setError(null);
 
     try {
-      // Build query parameters
       const params = {
         page,
         limit,
@@ -113,31 +106,25 @@ const Dashboard = () => {
         order: sortConfig.order,
       };
 
-      // Add status filter if not 'All'
       if (statusFilter && statusFilter !== "All") {
         params.status = statusFilter;
       }
 
-      // Add date range filters if they exist
       if (dateRange.startDate) params.startDate = dateRange.startDate;
       if (dateRange.endDate) params.endDate = dateRange.endDate;
 
-      // Update URL params
       setSearchParams(params);
 
       const result = await getAllTransactions(params);
       console.log("Transactions API response:", result);
 
       if (result && result.data) {
-        // Process the transactions to normalize status values
         let normalizedTransactions =
           result.data.transactions?.map((tx) => ({
             ...tx,
-            // Convert status to lowercase for consistency
             status: tx.status?.toLowerCase() || "pending",
           })) || [];
 
-        // Apply client-side sorting if sort field is transaction_amount or order_amount
         if (
           sortConfig.field === "transaction_amount" ||
           sortConfig.field === "order_amount"
@@ -161,7 +148,6 @@ const Dashboard = () => {
           }
         );
 
-        // Calculate statistics based on normalized transactions
         const total = normalizedTransactions.length;
         const totalAmount = normalizedTransactions.reduce(
           (sum, tx) => sum + (parseFloat(tx.transaction_amount) || 0),
@@ -201,7 +187,6 @@ const Dashboard = () => {
   };
 
   const handleSortChange = (field) => {
-    // Update sort configuration in state
     const newOrder =
       sortConfig.field === field && sortConfig.order === "asc" ? "desc" : "asc";
 
@@ -210,22 +195,15 @@ const Dashboard = () => {
       order: newOrder,
     });
 
-    // Apply client-side sorting for amount fields
     if (field === "transaction_amount" || field === "order_amount") {
-      // Create a sorted copy of the transactions array
       const sortedTransactions = [...transactions].sort((a, b) => {
-        // Parse the values as floats to ensure proper numeric comparison
         const valA = parseFloat(a[field] || 0);
         const valB = parseFloat(b[field] || 0);
 
-        // Apply the sort order
         return newOrder === "asc" ? valA - valB : valB - valA;
       });
-
-      // Update the transactions with the sorted array
       setTransactions(sortedTransactions);
     }
-    // For other fields, the sorting will happen server-side via the useEffect
   };
 
   const handleStatusFilterChange = (e) => {
@@ -250,7 +228,6 @@ const Dashboard = () => {
     setSearchParams({});
   };
 
-  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString();
@@ -261,7 +238,6 @@ const Dashboard = () => {
     const success = await refreshToken();
 
     if (success) {
-      // After successful token refresh, try to fetch transactions again
       fetchTransactions();
     }
 
@@ -275,7 +251,6 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto">
         <h1 className={darkModeStyles.getHeaderClass(darkMode)}>Dashboard</h1>
 
-        {/* Filters Section */}
         <div className={darkModeStyles.getFilterSectionClass(darkMode)}>
           <h2 className={darkModeStyles.getSectionHeaderClass(darkMode)}>
             Filters
@@ -336,7 +311,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Error state */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
             <strong className="font-bold">Error! </strong>
@@ -355,7 +329,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* If transactions are empty but we're not loading, show a refresh button */}
         {!loading && !error && transactions.length === 0 && (
           <div
             className={`${darkMode ? "bg-gray-800 border-yellow-600" : "bg-yellow-100 border-yellow-400"} border text-yellow-700 px-4 py-3 rounded mb-6`}
@@ -377,9 +350,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 mt-6">
-          {/* Total Transactions Card */}
           <div className={darkModeStyles.getContentContainerClass(darkMode)}>
             <h2
               className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} truncate`}
@@ -400,7 +371,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Total Amount Card */}
           <div className={darkModeStyles.getContentContainerClass(darkMode)}>
             <h2
               className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} truncate`}
@@ -421,7 +391,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Successful Transactions Card */}
           <div className={darkModeStyles.getContentContainerClass(darkMode)}>
             <h2
               className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} truncate`}
@@ -442,7 +411,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Successful Amount Card */}
           <div className={darkModeStyles.getContentContainerClass(darkMode)}>
             <h2
               className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-500"} truncate`}
@@ -467,7 +435,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Transactions */}
         <div className={darkModeStyles.getContentContainerClass(darkMode)}>
           <h2 className={darkModeStyles.getSectionHeaderClass(darkMode)}>
             Recent Transactions
@@ -693,7 +660,6 @@ const Dashboard = () => {
                 </tbody>
               </table>
 
-              {/* Pagination */}
               {transactions.length > 0 && (
                 <div className={darkModeStyles.getPaginationClass(darkMode)}>
                   <div className="flex flex-1 justify-between sm:hidden">
@@ -771,10 +737,8 @@ const Dashboard = () => {
                           </svg>
                         </button>
 
-                        {/* Page numbers */}
                         {[...Array(pagination.totalPages)].map((_, idx) => {
                           const pageNumber = idx + 1;
-                          // Only show a window of 5 pages centered around current page
                           if (
                             pageNumber === 1 ||
                             pageNumber === pagination.totalPages ||
@@ -801,7 +765,6 @@ const Dashboard = () => {
                             );
                           }
 
-                          // Show ellipsis
                           if (
                             (pageNumber === 2 && page > 4) ||
                             (pageNumber === pagination.totalPages - 1 &&

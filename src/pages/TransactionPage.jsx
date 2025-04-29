@@ -12,7 +12,6 @@ import {
 import TransactionList from "../components/TransactionList";
 import TransactionDetails from "../components/TransactionDetails";
 
-// Mock data - would be replaced with API calls in a real application
 const MOCK_TRANSACTIONS = [
   {
     id: "1",
@@ -108,16 +107,13 @@ const TransactionPage = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [currentTab, setCurrentTab] = useState(0);
 
-  // Simulate API call to fetch transactions
   useEffect(() => {
-    // In a real app, this would be an API call
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        // Simulate network delay
+
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        // Use mock data
         setTransactions(MOCK_TRANSACTIONS);
         setLoading(false);
       } catch (err) {
@@ -131,13 +127,13 @@ const TransactionPage = () => {
 
   const handleTransactionSelect = (transaction) => {
     setSelectedTransaction(transaction);
-    setCurrentTab(1); // Switch to details tab
+    setCurrentTab(1);
   };
 
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
     if (newValue === 0) {
-      setSelectedTransaction(null); // Clear selection when switching to list view
+      setSelectedTransaction(null);
     }
   };
 

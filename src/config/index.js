@@ -1,12 +1,9 @@
-// API Configuration
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://edviron-backend-2.onrender.com/api";
 
-// Date Formats
 export const DATE_FORMAT = "MM/dd/yyyy";
 export const DATE_TIME_FORMAT = "MM/dd/yyyy HH:mm:ss";
 
-// Transaction Status
 export const TRANSACTION_STATUS = {
   pending: "Pending",
   processing: "Processing",
@@ -16,7 +13,6 @@ export const TRANSACTION_STATUS = {
   canceled: "Canceled",
 };
 
-// Payment Methods
 export const PAYMENT_METHODS = {
   credit_card: "Credit Card",
   debit_card: "Debit Card",
@@ -28,7 +24,6 @@ export const PAYMENT_METHODS = {
   cash: "Cash",
 };
 
-// Transaction Types
 export const TRANSACTION_TYPES = {
   payment: "Payment",
   refund: "Refund",
@@ -40,11 +35,9 @@ export const TRANSACTION_TYPES = {
   fee: "Fee",
 };
 
-// Pagination
 export const DEFAULT_PAGE_SIZE = 10;
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
-// CSV Export Fields
 export const TRANSACTION_EXPORT_FIELDS = [
   { key: "id", label: "ID" },
   { key: "reference", label: "Reference" },
@@ -61,14 +54,12 @@ export const TRANSACTION_EXPORT_FIELDS = [
   { key: "updatedAt", label: "Updated At" },
 ];
 
-// Local Storage Keys
 export const LOCAL_STORAGE_KEYS = {
   AUTH_TOKEN: "auth_token",
   USER_INFO: "user_info",
   SCHOOL_ID: "school_id",
 };
 
-// Route Paths
 export const ROUTES = {
   LOGIN: "/login",
   DASHBOARD: "/dashboard",

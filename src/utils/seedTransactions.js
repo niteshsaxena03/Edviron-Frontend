@@ -1,9 +1,7 @@
 import axios from "axios";
 
-// Base URL for API requests
 const API_URL = "https://edviron-backend-2.onrender.com/api";
 
-// Function to create a transaction
 const createTransaction = async (data, token) => {
   try {
     const response = await axios.post(
@@ -24,7 +22,6 @@ const createTransaction = async (data, token) => {
   }
 };
 
-// Function to simulate a callback/webhook for a transaction
 const simulateCallback = async (data) => {
   try {
     const response = await axios.post(
@@ -38,7 +35,6 @@ const simulateCallback = async (data) => {
   }
 };
 
-// Generate a random student
 const generateStudent = (index) => {
   return {
     name: `Student ${index}`,
@@ -47,15 +43,12 @@ const generateStudent = (index) => {
   };
 };
 
-// Generate random amount between min and max
 const generateAmount = (min = 500, max = 5000) => {
   return Math.floor(Math.random() * (max - min + 1) + min).toString();
 };
 
-// List of possible payment gateways
 const paymentGateways = ["PhonePe", "Razorpay", "PayTM", "UPI", "NetBanking"];
 
-// List of possible payment statuses
 const paymentStatuses = [
   "SUCCESS",
   "FAILED",
@@ -66,28 +59,23 @@ const paymentStatuses = [
   "REFUNDED",
 ];
 
-// List of possible payment modes
 const paymentModes = ["upi", "netbanking", "card", "wallet"];
 
-// Generate a random gateway
 const getRandomGateway = () => {
   const index = Math.floor(Math.random() * paymentGateways.length);
   return paymentGateways[index];
 };
 
-// Generate a random status
 const getRandomStatus = () => {
   const index = Math.floor(Math.random() * paymentStatuses.length);
   return paymentStatuses[index];
 };
 
-// Generate a random payment mode
 const getRandomPaymentMode = () => {
   const index = Math.floor(Math.random() * paymentModes.length);
   return paymentModes[index];
 };
 
-// Main function to seed transactions
 export const seedTransactions = async (count = 10, token) => {
   console.log(`Starting to seed ${count} transactions...`);
 
@@ -103,12 +91,10 @@ export const seedTransactions = async (count = 10, token) => {
     transactions: [],
   };
 
-  // School ID from the assignment
   const schoolId = "65b0e6293e9f76a9694d84b4";
 
   for (let i = 0; i < count; i++) {
     try {
-      // Create transaction data
       const transactionData = {
         school_id: schoolId,
         amount: generateAmount(),
@@ -117,7 +103,6 @@ export const seedTransactions = async (count = 10, token) => {
         gateway_name: getRandomGateway(),
       };
 
-      // Create the transaction
       const createdTransaction = await createTransaction(
         transactionData,
         token
@@ -126,10 +111,8 @@ export const seedTransactions = async (count = 10, token) => {
       if (createdTransaction && createdTransaction.data) {
         results.created++;
 
-        // Get the transaction ID
         const transactionId = createdTransaction.data.order_id;
 
-        // Generate callback data
         const status = getRandomStatus();
         const callbackData = {
           payment_status: status,
@@ -143,7 +126,6 @@ export const seedTransactions = async (count = 10, token) => {
               : "",
         };
 
-        // Simulate the callback
         const callbackResult = await simulateCallback(callbackData);
 
         if (callbackResult) {
@@ -170,7 +152,6 @@ export const seedTransactions = async (count = 10, token) => {
       console.error(`Error in transaction ${i + 1}:`, error);
     }
 
-    // Add a small delay to prevent overwhelming the server
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
@@ -178,7 +159,6 @@ export const seedTransactions = async (count = 10, token) => {
   return { success: true, results };
 };
 
-// Helper function to login and get token
 export const login = async (email, password) => {
   try {
     const response = await axios.post(`${API_URL}/users/login`, {
@@ -195,18 +175,3 @@ export const login = async (email, password) => {
     return null;
   }
 };
-
-// Run the seeder (example usage):
-// import { seedTransactions, login } from './seedTransactions';
-//
-// async function run() {
-//   const token = await login('admin@example.com', 'password123');
-//   if (token) {
-//     const result = await seedTransactions(10, token);
-//     console.log(result);
-//   } else {
-//     console.error('Login failed');
-//   }
-// }
-//
-// run();

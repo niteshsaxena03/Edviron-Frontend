@@ -50,7 +50,6 @@ const Login = () => {
 
     try {
       await login(formData);
-      // Navigation is handled in the AuthContext after successful login
     } catch (err) {
       setError(
         err.message || "Failed to login. Please check your credentials."
@@ -60,7 +59,6 @@ const Login = () => {
     }
   };
 
-  // Function to handle guest login
   const handleGuestLogin = async () => {
     setError("");
     setIsLoading(true);
@@ -70,7 +68,6 @@ const Login = () => {
         email: "nitesh04@gmail.com",
         password: "11111111",
       });
-      // Navigation is handled in the context
     } catch (err) {
       setError(err.message || "Guest login failed. Please try again.");
     } finally {
@@ -82,7 +79,6 @@ const Login = () => {
     <div
       className={`min-h-screen flex flex-col justify-center px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}
     >
-      {/* Dark Mode Toggle */}
       <div className="absolute top-4 right-4 sm:top-8 sm:right-8">
         <button
           onClick={toggleDarkMode}
@@ -90,7 +86,6 @@ const Login = () => {
           aria-label="Toggle Dark Mode"
         >
           {darkMode ? (
-            // Sun icon
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 sm:h-6 sm:w-6"
@@ -106,7 +101,6 @@ const Login = () => {
               />
             </svg>
           ) : (
-            // Moon icon
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 sm:h-6 sm:w-6"
@@ -243,7 +237,6 @@ const Login = () => {
             </div>
           </form>
 
-          {/* Guest Login Button */}
           <div className="mt-4">
             <button
               onClick={handleGuestLogin}

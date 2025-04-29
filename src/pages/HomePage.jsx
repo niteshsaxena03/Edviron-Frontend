@@ -4,7 +4,6 @@ import "../index.css";
 const HomePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-700 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      {/* Abstract shapes for visual interest */}
       <div className="absolute top-0 left-0 w-full h-full opacity-20">
         <div className="absolute top-10 left-10 w-96 h-96 rounded-full bg-blue-600 filter blur-3xl"></div>
         <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-purple-500 filter blur-3xl"></div>

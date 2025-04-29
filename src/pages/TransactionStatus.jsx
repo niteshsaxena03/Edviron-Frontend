@@ -26,7 +26,7 @@ const TransactionStatus = () => {
     try {
       const response = await getTransactionStatus(orderId);
 
-      // Extract transaction data from the nested response structure
+
       if (response.data && response.data.data) {
         setTransactionStatus(response.data.data);
       } else {
@@ -41,7 +41,7 @@ const TransactionStatus = () => {
     }
   };
 
-  // Get status badge class based on transaction status
+
   const getStatusBadgeClass = (status) => {
     const baseClass =
       "px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full";
@@ -58,13 +58,13 @@ const TransactionStatus = () => {
     }
   };
 
-  // Format date for display
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString();
   };
 
-  // Format currency amount
+
   const formatAmount = (amount) => {
     if (amount === undefined || amount === null) return "N/A";
     return `₹${parseFloat(amount).toFixed(2)}`;
@@ -78,7 +78,7 @@ const TransactionStatus = () => {
         </h1>
       </div>
 
-      {/* Search Form */}
+
       <div className={darkModeStyles.getFilterContainerClass(darkMode)}>
         <form
           onSubmit={handleCheck}
@@ -142,7 +142,7 @@ const TransactionStatus = () => {
         </form>
       </div>
 
-      {/* Error message */}
+ 
       {error && (
         <div
           className={`${darkMode ? "bg-red-900 border-red-800 text-red-100" : "bg-red-100 border-red-400 text-red-700"} border px-4 py-3 rounded relative mb-4 transition-colors duration-300`}
@@ -153,7 +153,7 @@ const TransactionStatus = () => {
         </div>
       )}
 
-      {/* Results */}
+
       {searched && !loading && !error && (
         <div className="mt-6">
           {transactionStatus ? (
@@ -313,7 +313,7 @@ const TransactionStatus = () => {
         </div>
       )}
 
-      {/* Initial state - no search yet */}
+
       {!searched && !loading && (
         <div
           className={`text-center py-12 ${darkMode ? "bg-gray-700" : "bg-gray-50"} rounded-lg transition-colors duration-300`}

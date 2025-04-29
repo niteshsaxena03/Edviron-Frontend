@@ -68,7 +68,6 @@ export const getStatusDisplayName = (statusKey) => {
     }
   }
 
-  // If no match found, capitalize the first letter and return
   return (
     normalizedStatusKey.charAt(0).toUpperCase() + normalizedStatusKey.slice(1)
   );
@@ -90,7 +89,6 @@ export const getPaymentMethodDisplayName = (methodKey) => {
     }
   }
 
-  // If no match found, capitalize the first letter and return
   return (
     normalizedMethodKey.charAt(0).toUpperCase() + normalizedMethodKey.slice(1)
   );
@@ -112,7 +110,6 @@ export const getTransactionTypeDisplayName = (typeKey) => {
     }
   }
 
-  // If no match found, capitalize the first letter and return
   return normalizedTypeKey.charAt(0).toUpperCase() + normalizedTypeKey.slice(1);
 };
 
@@ -146,7 +143,6 @@ export const formatTransactionForDisplay = (transaction) => {
 export const prepareTransactionForForm = (transaction) => {
   if (!transaction) return {};
 
-  // Convert dates to format expected by form components
   const formReadyData = {
     ...transaction,
     date: transaction.date ? new Date(transaction.date) : null,
@@ -178,7 +174,6 @@ export const prepareFormDataForApi = (formData) => {
 export const canRefundTransaction = (transaction) => {
   if (!transaction) return false;
 
-  // Only successful payments can be refunded
   return (
     transaction.status === "completed" &&
     transaction.type === "payment" &&
@@ -227,9 +222,8 @@ export const calculateTransactionFee = (amount, paymentMethod) => {
 
   const normalizedMethod = paymentMethod.toLowerCase();
 
-  // Find the matching payment method in a case-insensitive way
-  let rate = 0.02; // Default rate
-  let fixed = 0.25; // Default fixed fee
+  let rate = 0.02;
+  let fixed = 0.25;
 
   for (const [key, value] of Object.entries(feeRates)) {
     if (key.toLowerCase() === normalizedMethod) {
@@ -250,17 +244,14 @@ export const calculateTransactionFee = (amount, paymentMethod) => {
 export const determineTransactionStatus = (transaction) => {
   if (!transaction) return "pending";
 
-  // Normalize existing status if present
   const currentStatus = transaction.status
     ? transaction.status.toLowerCase()
     : "";
 
-  // Check for specific error conditions first
   if (transaction.error || transaction.failureReason) {
     return "failed";
   }
 
-  // Check for refund status
   if (
     transaction.refunded ||
     (transaction.refundAmount && transaction.refundAmount > 0) ||
@@ -269,17 +260,15 @@ export const determineTransactionStatus = (transaction) => {
     return "refunded";
   }
 
-  // Check for cancellation - handle case differences
   if (
     transaction.canceled ||
     transaction.canceledAt ||
     currentStatus === "canceled" ||
-    currentStatus === "cancelled" // Handle British English spelling
+    currentStatus === "cancelled"
   ) {
     return "canceled";
   }
 
-  // Check for completion - handle case differences and aliases
   const completedStatuses = [
     "completed",
     "success",
@@ -295,7 +284,6 @@ export const determineTransactionStatus = (transaction) => {
     return "completed";
   }
 
-  // Check for processing - handle case differences and aliases
   const processingStatuses = [
     "processing",
     "in_progress",
@@ -306,7 +294,6 @@ export const determineTransactionStatus = (transaction) => {
     return "processing";
   }
 
-  // Default to pending
   return "pending";
 };
 
@@ -342,9 +329,9 @@ export const getStatusColorClass = (status) => {
     pending: "text-yellow-600 bg-yellow-100",
     processing: "text-blue-600 bg-blue-100",
     completed: "text-green-600 bg-green-100",
-    success: "text-green-600 bg-green-100", // Alias for 'completed'
+    success: "text-green-600 bg-green-100",
     failed: "text-red-600 bg-red-100",
-    failure: "text-red-600 bg-red-100", // Alias for 'failed'
+    failure: "text-red-600 bg-red-100",
     refunded: "text-purple-600 bg-purple-100",
     canceled: "text-gray-600 bg-gray-100",
   };
@@ -383,7 +370,6 @@ export const truncateText = (text, length = 25) => {
 export const normalizeTransaction = (transaction) => {
   if (!transaction) return null;
 
-  // Extract relevant fields and normalize keys
   return {
     id: transaction.collect_id || transaction._id,
     orderId: transaction.custom_order_id,
@@ -397,7 +383,6 @@ export const normalizeTransaction = (transaction) => {
     schoolId: transaction.school_id,
     studentInfo: transaction.student_info || {},
     bankReference: transaction.bank_reference || "",
-    // Add any other fields that need normalization
   };
 };
 

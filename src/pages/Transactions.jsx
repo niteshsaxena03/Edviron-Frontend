@@ -18,7 +18,6 @@ const Transactions = () => {
           Transactions
         </h1>
 
-        {/* Filters */}
         <div className={darkModeStyles.getFilterSectionClass(darkMode)}>
           <h2 className={darkModeStyles.getSectionHeaderClass(darkMode)}>
             Filters
@@ -79,7 +78,6 @@ const Transactions = () => {
           </div>
         </div>
 
-        {/* Error message */}
         {error && (
           <div
             className={`${darkMode ? "bg-red-900 bg-opacity-20 border-red-700" : "bg-red-100 border-red-400"} border text-red-700 px-4 py-3 rounded relative mb-4`}
@@ -90,7 +88,6 @@ const Transactions = () => {
           </div>
         )}
 
-        {/* Loading indicator or Content */}
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div
@@ -99,7 +96,6 @@ const Transactions = () => {
           </div>
         ) : (
           <>
-            {/* Transactions table */}
             <div className={darkModeStyles.getContentContainerClass(darkMode)}>
               <div className="overflow-x-auto">
                 <table className={darkModeStyles.getTableClass(darkMode)}>
@@ -308,7 +304,6 @@ const Transactions = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
               {transactions.length > 0 && (
                 <div className={darkModeStyles.getPaginationClass(darkMode)}>
                   <div className="flex flex-1 justify-between sm:hidden">
@@ -370,10 +365,9 @@ const Transactions = () => {
                           </svg>
                         </button>
 
-                        {/* Page numbers */}
                         {[...Array(pagination.totalPages)].map((_, idx) => {
                           const pageNumber = idx + 1;
-                          // Only show a window of 5 pages centered around current page
+
                           if (
                             pageNumber === 1 ||
                             pageNumber === pagination.totalPages ||
@@ -394,7 +388,6 @@ const Transactions = () => {
                             );
                           }
 
-                          // Show ellipsis
                           if (
                             (pageNumber === 2 && page > 4) ||
                             (pageNumber === pagination.totalPages - 1 &&

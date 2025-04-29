@@ -9,15 +9,12 @@ import {
   refreshToken,
 } from "../services/auth.service";
 
-// Create context
 const AuthContext = createContext();
 
-// Custom hook to use auth context
 export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-// Provider component
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +22,6 @@ export const AuthProvider = ({ children }) => {
   const [tokenRefreshed, setTokenRefreshed] = useState(false);
   const navigate = useNavigate();
 
-  // Initialize auth state from localStorage and check token validity
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -33,9 +29,7 @@ export const AuthProvider = ({ children }) => {
         const user = getCurrentUser();
         setCurrentUser(user);
 
-        // If there is a user but token might be expired, try to refresh
         if (user && !tokenRefreshed) {
-          // Only try to refresh token once to avoid infinite loops
           setTokenRefreshed(true);
           await refreshToken();
         }
@@ -49,7 +43,6 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, [tokenRefreshed]);
 
-  // Register function
   const register = async (userData) => {
     try {
       setLoading(true);
@@ -82,10 +75,8 @@ export const AuthProvider = ({ children }) => {
 
       const response = await apiLogin(credentials);
 
-      // Backend returns response with { success, message, data: { user, token } }
       if (response.success && response.data.user) {
         setCurrentUser(response.data.user);
-        // Navigate to dashboard after successful login
         navigate("/dashboard");
       }
 
@@ -99,17 +90,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
   const logout = () => {
     apiLogout();
     setCurrentUser(null);
     navigate("/login");
   };
 
-  // Check if user is authenticated
   const authenticated = isAuthenticated();
 
-  // Context value
   const value = {
     currentUser,
     loading,
