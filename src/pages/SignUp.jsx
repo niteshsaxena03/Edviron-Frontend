@@ -292,6 +292,20 @@ const SignUp = () => {
               </button>
             </div>
           </form>
+
+          <div
+            className={`mt-8 p-4 rounded-lg ${darkMode ? "bg-gray-700" : "bg-blue-50"}`}
+          >
+            <p
+              className={`text-sm ${darkMode ? "text-gray-300" : "text-blue-800"}`}
+            >
+              Note: Due to free tier hosting on Render, the first signup attempt
+              may take a few minutes as the server "wakes up" from sleep mode.
+              Subsequent requests will be much faster. The signup functionality
+              will work 100% - just needs a moment to start up! Thank you for
+              your patience! 🙏
+            </p>
+          </div>
         </div>
       </div>
     </div>
